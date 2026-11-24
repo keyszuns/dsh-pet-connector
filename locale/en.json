@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Big Fat Fish World connector",
+    "description": "Connects the local dsh-pet to Big Fat Fish World: device-code pairing, manual city choice, birthday-based five elements, world presence, and a three-tab panel. No geolocation and no local data reads.",
+    "detail": "docs/DETAIL.en.md"
+  }
+}

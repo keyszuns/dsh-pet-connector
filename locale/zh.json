@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "大肥鱼世界连接器",
+    "description": "把本机 dsh-pet 接入大肥鱼世界：设备配对、手动选城市、生日定五行、世界在线、三 Tab 面板。不含定位，不读取本地信息。",
+    "detail": "docs/DETAIL.zh.md"
+  }
+}

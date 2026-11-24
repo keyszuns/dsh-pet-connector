@@ -1,0 +1,7 @@
+- insert:
+    - id: dsh-pet-connector
+      name: 'dsh-pet-connector'
+      config:
+        platformUrl: 'https://fish.virtuallife.cloud'
+        petId: 'main'
+        petName: '大肥鱼'

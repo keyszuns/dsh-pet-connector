@@ -1,0 +1,6 @@
+url: https://github.com/keyszuns/dsh-pet-connector
+name: keyszuns/dsh-pet-connector
+category: fun
+description:
+  en: Connects local dsh-pet to Big Fat Fish World with pairing, presence, and a bilingual panel.
+  zh: 把本机 dsh-pet 接入大肥鱼世界，支持配对、在线状态和中英文面板。
