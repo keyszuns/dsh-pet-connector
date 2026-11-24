@@ -652,7 +652,7 @@ class Connector {
         return this.sendJson(res, result.status, result.body)
       }
 
-      if (method === 'POST' && (path === '/coop/create' || path === '/coop/join')) {
+      if (method === 'POST' && (path === '/coop/create' || path === '/coop/join' || path === '/coop/join-friend')) {
         const body = await this.readJson(req)
         const result = await this.platformJson(`/v1/world${path}`, {
           method: 'POST',
