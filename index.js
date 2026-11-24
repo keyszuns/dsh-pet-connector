@@ -815,14 +815,26 @@ class Connector {
         return this.sendJson(res, result.status, result.body)
       }
 
-      if (method === 'GET' && (path === '/globe3d.js' || path === '/geo')) {
-        const asset = path === '/geo' ? '/assets/countries.topo.json' : '/assets/globe3d.js'
+      if (method === 'GET' && path === '/globe3d.js') {
         try {
-          const response = await fetch(this.platformUrl + asset)
+          const body = await readFile(new URL('./assets/globe3d.js', import.meta.url), 'utf8')
+          res.writeHead(200, {
+            'content-type': 'application/javascript; charset=utf-8',
+            'cache-control': 'no-cache, must-revalidate',
+          })
+          return res.end(body)
+        } catch {
+          return this.sendJson(res, 500, { ok: false, reason: 'globe-asset-missing' })
+        }
+      }
+
+      if (method === 'GET' && path === '/geo') {
+        try {
+          const response = await fetch(this.platformUrl + '/assets/countries.topo.json')
           const buffer = Buffer.from(await response.arrayBuffer())
           res.writeHead(response.status, {
-            'content-type': path === '/geo' ? 'application/json; charset=utf-8' : 'application/javascript; charset=utf-8',
-            'cache-control': path === '/geo' ? 'public, max-age=86400' : 'no-cache, must-revalidate',
+            'content-type': 'application/json; charset=utf-8',
+            'cache-control': 'public, max-age=86400',
           })
           return res.end(buffer)
         } catch {

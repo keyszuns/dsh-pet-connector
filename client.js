@@ -475,7 +475,7 @@ window.__ModuleLoader__.load({
     let globeScriptPromise = null
     let activeGlobeInstance = null
     let globeMountSeq = 0
-    const GLOBE_ASSET_VERSION = '20261119c'
+    const GLOBE_ASSET_VERSION = '20261124a'
 
     function loadGlobeScript() {
       if (window.DFYGlobe) return Promise.resolve(window.DFYGlobe)
@@ -3145,13 +3145,6 @@ window.__ModuleLoader__.load({
                   id: 'dfy-globe-panel',
                   style: { position: 'relative', flex: '1 1 340px', height: 360, minWidth: 260, overflow: 'hidden', borderRadius: 12, background: 'rgba(5,18,30,0.35)' },
                 },
-                h('img', {
-                  src: globeImageSrc(globe.points ?? []),
-                  alt: '全球大肥鱼地区分布',
-                  width: 360,
-                  height: 360,
-                  style: { position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.15 },
-                }),
               ),
               h(
                 'div',

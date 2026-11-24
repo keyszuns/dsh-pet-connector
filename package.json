@@ -1,6 +1,6 @@
 {
   "name": "dsh-pet-connector",
-  "version": "0.72.2",
+  "version": "0.72.3",
   "private": false,
   "description": "Connect your local dsh-pet to Big Fat Fish World: pairing, city and birthday five-elements, world presence, and a three-tab panel.",
   "type": "module",
@@ -39,6 +39,7 @@
     "cordis.patch.yml",
     "locale/*.json",
     "docs",
+    "assets/globe3d.js",
     "icon.svg",
     "README.md",
     "LICENSE"
