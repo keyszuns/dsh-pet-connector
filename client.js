@@ -327,46 +327,57 @@ window.__ModuleLoader__.load({
       idle: token('state-idle-primary', '#55607a'),
     }
 
+    // 用当前主题的文字色和底色混出边框，适配浅色、深色和自定义主题。
+    const DFY_BORDER = `color-mix(in srgb, ${COLORS.text} 26%, ${COLORS.layer1})`
+    const DFY_BORDER_SOFT = `color-mix(in srgb, ${COLORS.text} 17%, ${COLORS.layer1})`
+    const DFY_CARD_BG = `color-mix(in srgb, ${COLORS.layer2} 93%, ${COLORS.text})`
+    const DFY_HEADER_BG = `color-mix(in srgb, ${COLORS.layer2} 96%, ${COLORS.text})`
+    const DFY_MUTED = `color-mix(in srgb, ${COLORS.textDim} 82%, ${COLORS.text})`
+    const DFY_GHOST_BG = `color-mix(in srgb, ${COLORS.text} 6%, transparent)`
+    const DFY_BADGE_BG = `color-mix(in srgb, ${COLORS.brand} 15%, transparent)`
+    const DFY_TRACK_BG = `color-mix(in srgb, ${COLORS.base} 78%, ${COLORS.text})`
+    const DFY_INPUT_BG = `color-mix(in srgb, ${COLORS.base} 96%, ${COLORS.text})`
+
     const styles = {
       backdrop: {
         position: 'fixed', inset: 0, zIndex: 2147483000, display: 'flex', alignItems: 'center',
-        justifyContent: 'center', background: 'rgba(6, 9, 14, 0.55)', backdropFilter: 'blur(2px)',
+        justifyContent: 'center', background: 'rgba(0, 0, 0, 0.42)', backdropFilter: 'blur(3px)',
       },
       panel: {
         width: 'min(720px, calc(100vw - 40px))', maxHeight: 'min(640px, calc(100vh - 80px))',
         display: 'flex', flexDirection: 'column', background: COLORS.layer1, color: COLORS.text,
         border: `1px solid ${COLORS.borderStrong}`, borderRadius: 16,
-        boxShadow: '0 24px 80px rgba(0,0,0,0.55)', overflow: 'hidden',
+        boxShadow: `inset 0 0 0 1px ${DFY_BORDER}, 0 24px 80px rgba(0,0,0,0.28), 0 4px 16px rgba(0,0,0,0.12)`, overflow: 'hidden',
         font: '14px/1.6 "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif',
       },
       header: {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-        padding: '12px 16px', borderBottom: `1px solid ${COLORS.border}`, background: COLORS.layer2,
+        padding: '12px 16px', borderBottom: `1px solid ${DFY_BORDER}`, background: DFY_HEADER_BG, boxShadow: `inset 0 -1px 0 ${DFY_BORDER_SOFT}`,
       },
       title: { fontSize: 16, fontWeight: 600, margin: 0 },
-      sub: { fontSize: 12, color: COLORS.textDim },
-      tabs: { display: 'flex', flexWrap: 'wrap', gap: 6, padding: '10px 16px 0' },
+      sub: { fontSize: 12, color: DFY_MUTED },
+      tabs: { display: 'flex', flexWrap: 'wrap', gap: 6, padding: '10px 16px', borderBottom: `1px solid ${DFY_BORDER_SOFT}` },
       tab: (active) => ({
         position: 'relative',
-        border: `1px solid ${active ? COLORS.brandSolid : COLORS.border}`,
-        background: active ? COLORS.brandSolid : 'transparent',
-        color: active ? '#fff' : COLORS.textDim,
+        border: `1px solid ${active ? COLORS.brandSolid : DFY_BORDER}`,
+        background: active ? COLORS.brandSolid : DFY_GHOST_BG,
+        color: active ? '#fff' : DFY_MUTED,
         borderRadius: 8, padding: '6px 14px', fontSize: 13, cursor: 'pointer',
       }),
       body: { padding: '14px 16px', overflow: 'auto', flex: 1 },
       footer: {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '10px 16px', borderTop: `1px solid ${COLORS.border}`, fontSize: 12, color: COLORS.textDim,
+        padding: '10px 16px', borderTop: `1px solid ${DFY_BORDER}`, fontSize: 12, color: DFY_MUTED, background: DFY_HEADER_BG,
       },
-      card: { border: `1px solid ${COLORS.border}`, background: COLORS.layer2, borderRadius: 12, padding: 14, marginBottom: 12 },
+      card: { border: `1px solid ${COLORS.borderStrong}`, background: DFY_CARD_BG, borderRadius: 12, padding: 14, marginBottom: 12, boxShadow: `inset 0 0 0 1px ${DFY_BORDER_SOFT}, 0 1px 2px rgba(0,0,0,0.05)` },
       row: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
       name: { fontSize: 18, fontWeight: 600, margin: 0 },
-      meta: { fontSize: 12, color: COLORS.textDim },
+      meta: { fontSize: 12, color: DFY_MUTED },
       badge: {
-        display: 'inline-block', padding: '1px 8px', borderRadius: 999, background: '#22304a',
-        color: COLORS.brand, fontSize: 12, marginLeft: 6,
+        display: 'inline-block', padding: '1px 8px', borderRadius: 999, background: DFY_BADGE_BG,
+        color: COLORS.brand, fontSize: 12, marginLeft: 6, border: `1px solid ${DFY_BORDER_SOFT}`,
       },
-      bar: { height: 8, borderRadius: 4, background: COLORS.base, overflow: 'hidden', marginTop: 8 },
+      bar: { height: 8, borderRadius: 4, background: DFY_TRACK_BG, overflow: 'hidden', marginTop: 8 },
       barFill: (pct, color = COLORS.brandSolid) => ({
         height: '100%', width: `${Math.max(0, Math.min(100, pct))}%`, background: color,
       }),
@@ -375,25 +386,25 @@ window.__ModuleLoader__.load({
         cursor: 'pointer', background: COLORS.brandSolid, color: '#fff',
       },
       btnGhost: {
-        border: `1px solid ${COLORS.border}`, borderRadius: 8, padding: '7px 14px',
-        fontSize: 13, cursor: 'pointer', background: 'transparent', color: COLORS.text,
+        border: `1px solid ${DFY_BORDER}`, borderRadius: 8, padding: '7px 14px',
+        fontSize: 13, cursor: 'pointer', background: DFY_GHOST_BG, color: COLORS.text,
       },
       select: {
-        background: COLORS.base, color: COLORS.text, border: `1px solid ${COLORS.border}`,
-        borderRadius: 8, padding: '7px 10px', fontSize: 13,
+        background: DFY_INPUT_BG, color: COLORS.text, border: `1px solid ${DFY_BORDER}`,
+        borderRadius: 8, padding: '7px 10px', fontSize: 13, boxShadow: `inset 0 0 0 1px ${DFY_BORDER_SOFT}`,
       },
       grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 },
-      pet: { border: `1px solid ${COLORS.border}`, background: COLORS.layer2, borderRadius: 10, padding: 12 },
-      petMine: { borderColor: 'rgba(47,107,255,0.6)' },
+      pet: { border: `1px solid ${COLORS.borderStrong}`, background: DFY_CARD_BG, borderRadius: 10, padding: 12, boxShadow: `inset 0 0 0 1px ${DFY_BORDER_SOFT}` },
+      petMine: { borderColor: COLORS.brand },
       dot: (online) => ({ display: 'inline-block', width: 8, height: 8, borderRadius: 4, marginRight: 6, background: online ? COLORS.ok : COLORS.idle }),
-      empty: { color: COLORS.textDim, textAlign: 'center', padding: '24px 0' },
+      empty: { color: DFY_MUTED, textAlign: 'center', padding: '24px 0' },
       error: { color: COLORS.err, fontSize: 12, marginTop: 8 },
-      hint: { color: COLORS.textDim, fontSize: 12, marginTop: 8 },
-      slot: { border: `1px dashed ${COLORS.borderStrong}`, borderRadius: 10, padding: 14, textAlign: 'center', color: COLORS.textDim, fontSize: 12 },
+      hint: { color: DFY_MUTED, fontSize: 12, marginTop: 8 },
+      slot: { border: `2px dashed ${DFY_BORDER}`, borderRadius: 10, padding: 14, textAlign: 'center', color: DFY_MUTED, fontSize: 12, background: DFY_GHOST_BG },
       link: { color: COLORS.brand, cursor: 'pointer', textDecoration: 'underline', background: 'none', border: 0, padding: 0, font: 'inherit' },
       code: {
         font: '600 26px/1 "Consolas", monospace', letterSpacing: 6, padding: '14px 18px',
-        borderRadius: 12, border: `1px dashed ${COLORS.borderStrong}`, background: COLORS.base, color: COLORS.brand, display: 'inline-block',
+        borderRadius: 12, border: `1px dashed ${COLORS.borderStrong}`, background: DFY_INPUT_BG, color: COLORS.brand, display: 'inline-block',
       },
     }
 
@@ -702,7 +713,7 @@ window.__ModuleLoader__.load({
           { style: styles.card },
           h('h3', { style: { margin: '0 0 8px' } }, '大肥鱼世界连接器 / Big Fat Fish World Connector'),
           h('p', { style: { margin: '0 0 8px' } }, '把本机 dsh-pet 接入大肥鱼世界：设备配对、手动选择城市、生日五行、世界在线、三 Tab 面板。'),
-          h('p', { style: { margin: '0 0 8px', color: 'var(--dsw-alias-text-secondary, #8b95a7)' } }, 'Connects your local dsh-pet to Big Fat Fish World: device pairing, manual city choice, birthday five-elements, presence, and a three-tab panel.'),
+          h('p', { style: { margin: '0 0 8px', color: DFY_MUTED } }, 'Connects your local dsh-pet to Big Fat Fish World: device pairing, manual city choice, birthday five-elements, presence, and a three-tab panel.'),
           h('p', { style: styles.hint }, '前置条件 / Prerequisite: 需要先安装并启用 dsh-pet。Install and enable dsh-pet first.'),
           h('p', { style: styles.hint }, '服务器 / Server: ', h('code', null, 'https://fish.virtuallife.cloud')),
           h('p', { style: styles.hint }, 'GitHub: ', h('button', { style: styles.link, onClick: () => window.open('https://github.com/keyszuns/dsh-pet-connector', '_blank', 'noopener') }, 'keyszuns/dsh-pet-connector')),
@@ -818,6 +829,7 @@ window.__ModuleLoader__.load({
       const [threadMessages, setThreadMessages] = useState([])
       const threadScrollRef = useRef(null)
       const [threadInput, setThreadInput] = useState('')
+      const [threadFriendRequested, setThreadFriendRequested] = useState(false)
       const [board, setBoard] = useState(null)
       const [boardType, setBoardType] = useState('wealth')
       const [boardScope, setBoardScope] = useState('global')
@@ -835,6 +847,8 @@ window.__ModuleLoader__.load({
       const [friendDfy, setFriendDfy] = useState('')
       const [coopCode, setCoopCode] = useState('')
       const [coopInput, setCoopInput] = useState('')
+      const [coopFriendQuery, setCoopFriendQuery] = useState('')
+      const [coopFriendPick, setCoopFriendPick] = useState('')
       const [dungeonCoopCode, setDungeonCoopCode] = useState('')
       const [dungeonCoopInput, setDungeonCoopInput] = useState('')
       const [inventory, setInventory] = useState([])
@@ -1547,6 +1561,7 @@ window.__ModuleLoader__.load({
             setThreadPeer({ ...data.peer, friend: Boolean(data.friend) })
             setThreadMessages(data.messages ?? [])
             setThreadInput('')
+            setThreadFriendRequested(false)
             return true
           }
           setError(data?.message ?? '打开会话失败')
@@ -1843,22 +1858,31 @@ window.__ModuleLoader__.load({
         return undefined
       }, [open, tab, refreshBag])
 
-      const addFriend = async () => {
-        const dfyId = friendDfy.trim()
-        if (!dfyId) return
+      const requestFriend = async (dfyId) => {
+        const target = (dfyId ?? '').trim()
+        if (!target) return false
         setBusy('friend-add')
+        setError('')
         try {
-          const data = await postJson('/friends/request', { dfyId })
-          if (!data.ok) setError(data.message ?? '加好友失败')
-          else {
-            setFriendDfy('')
-            await refreshFriends()
+          const data = await postJson('/friends/request', { dfyId: target })
+          if (!data.ok) {
+            setError(data.message ?? '加好友失败')
+            return false
           }
+          await refreshFriends()
+          setNotice('好友申请已发送')
+          return true
         } catch {
           setError('加好友失败')
+          return false
         } finally {
           setBusy('')
         }
+      }
+
+      const addFriend = async () => {
+        const ok = await requestFriend(friendDfy.trim())
+        if (ok) setFriendDfy('')
       }
 
       const acceptFriend = async (dfyId) => {
@@ -1898,6 +1922,27 @@ window.__ModuleLoader__.load({
           }
         } catch {
           setError('发起结伴失败')
+        } finally {
+          setBusy('')
+        }
+      }
+
+      const joinCoopFriend = async (dfyId) => {
+        const target = (dfyId ?? '').trim()
+        if (!target) return
+        setBusy('coop-join-friend')
+        setError('')
+        try {
+          const data = await postJson('/coop/join-friend', { dfyId: target })
+          if (!data.ok) setError(data.message ?? '加入结伴失败')
+          else {
+            setCoopCode(data.code ?? '')
+            setCoopFriendPick('')
+            setCoopFriendQuery('')
+            await refreshMe()
+          }
+        } catch {
+          setError('加入结伴失败')
         } finally {
           setBusy('')
         }
@@ -2076,7 +2121,7 @@ window.__ModuleLoader__.load({
         me?.tide
           ? h(
               'div',
-              { style: { ...styles.card, borderColor: me.tide.active ? COLORS.ok : COLORS.border } },
+              { style: { ...styles.card, borderColor: me.tide.active ? COLORS.ok : DFY_BORDER } },
               h(
                 'div',
                 { style: styles.row },
@@ -2127,9 +2172,9 @@ window.__ModuleLoader__.load({
                             padding: '4px 0',
                             borderRadius: 6,
                             fontSize: 11,
-                            border: `1px solid ${day.checked ? COLORS.ok : COLORS.border}`,
-                            color: day.checked ? COLORS.ok : COLORS.textDim,
-                            background: day.today ? 'rgba(47,107,255,0.12)' : 'transparent',
+                            border: `1px solid ${day.checked ? COLORS.ok : DFY_BORDER}`,
+                            color: day.checked ? COLORS.ok : DFY_MUTED,
+                            background: day.today ? `color-mix(in srgb, ${COLORS.brandSolid} 14%, transparent)` : 'transparent',
                           },
                         },
                         h('div', null, day.checked ? '✓' : '·'),
@@ -2452,23 +2497,45 @@ window.__ModuleLoader__.load({
                 null,
                 h(
                   'div',
-                  { style: { ...styles.row, marginTop: 8 } },
+                  { style: { ...styles.row, marginTop: 8, flexWrap: 'wrap' } },
                   h('button', { style: styles.btn, onClick: createCoop, disabled: busy === 'coop-create' || Boolean(shift) }, '发起结伴'),
                   h(
                     'input',
                     {
-                      style: { ...styles.select, flex: 1, minWidth: 120 },
-                      placeholder: '输入好友的结伴码',
-                      maxLength: 6,
-                      value: coopInput,
-                      onChange: (event) => setCoopInput(event.target.value.toUpperCase()),
+                      style: { ...styles.select, flex: '1 1 150px', minWidth: 120 },
+                      placeholder: '搜索好友名字 / ID',
+                      value: coopFriendQuery,
+                      onChange: (event) => {
+                        setCoopFriendQuery(event.target.value)
+                        setCoopFriendPick('')
+                      },
                       onKeyDown: (event) => {
-                        if (event.key === 'Enter') void joinCoop()
+                        if (event.key === 'Enter' && coopFriendPick) void joinCoopFriend(coopFriendPick)
                       },
                     },
                   ),
-                  h('button', { style: styles.btnGhost, onClick: joinCoop, disabled: busy === 'coop-join' || Boolean(shift) }, '加入'),
+                  h(
+                    'select',
+                    {
+                      style: { ...styles.select, flex: '1 1 170px', minWidth: 140 },
+                      value: coopFriendPick,
+                      onChange: (event) => setCoopFriendPick(event.target.value),
+                      disabled: friends.length === 0,
+                    },
+                    h('option', { value: '' }, friends.length === 0 ? '还没有好友' : '选择好友'),
+                    coopFriendMatches.map((friend) =>
+                      h('option', { key: friend.dfyId, value: friend.dfyId }, `${friend.name}（${friend.dfyId}）${friend.online ? ' · 在线' : ''}`),
+                    ),
+                  ),
+                  h('button', {
+                    style: styles.btnGhost,
+                    onClick: () => void joinCoopFriend(coopFriendPick),
+                    disabled: busy === 'coop-join-friend' || Boolean(shift) || !coopFriendPick,
+                  }, '加入'),
                 ),
+                coopFriendSelected
+                  ? h('div', { style: styles.hint }, `已选择：${coopFriendSelected.name} · ${coopFriendSelected.dfyId}${coopFriendSelected.region ? ` · ${coopFriendSelected.region}` : ''}`)
+                  : null,
                 coopCode ? h('div', { style: styles.hint }, `结伴码：${coopCode}（发给好友，双方用同一个班次）`) : null,
               ),
           h('div', { style: styles.hint }, friends.length === 0 ? '先加好友才能结伴：去「世界」顶部的好友卡添加。' : '只能和好友结伴；每天同一好友最多 3 次加成。'),
@@ -2482,7 +2549,7 @@ window.__ModuleLoader__.load({
               quests.map((quest) =>
                 h(
                   'div',
-                  { key: quest.id, style: { ...styles.row, padding: '6px 0', borderBottom: `1px solid ${COLORS.border}` } },
+                  { key: quest.id, style: { ...styles.row, padding: '6px 0', borderBottom: `1px solid ${DFY_BORDER}` } },
                   h(
                     'div',
                     { style: { flex: 1 } },
@@ -2506,7 +2573,7 @@ window.__ModuleLoader__.load({
               weeklyQuests.map((quest) =>
                 h(
                   'div',
-                  { key: quest.id, style: { ...styles.row, padding: '6px 0', borderBottom: `1px solid ${COLORS.border}` } },
+                  { key: quest.id, style: { ...styles.row, padding: '6px 0', borderBottom: `1px solid ${DFY_BORDER}` } },
                   h(
                     'div',
                     { style: { flex: 1 } },
@@ -2543,7 +2610,7 @@ window.__ModuleLoader__.load({
                       style: {
                         padding: '8px 10px',
                         borderRadius: 8,
-                        border: `1px solid ${entry.unlocked ? COLORS.ok : COLORS.border}`,
+                        border: `1px solid ${entry.unlocked ? COLORS.ok : DFY_BORDER}`,
                         opacity: entry.unlocked ? 1 : 0.55,
                       },
                     },
@@ -2622,7 +2689,7 @@ window.__ModuleLoader__.load({
                 { style: styles.hint },
                 me?.rename?.nextAt
                   ? `改名冷却：${remainText(me.rename.nextAt, tick)}（30 天一次）`
-                  : '名字 2–12 个字；每 30 天可改一次。',
+                  : '名字 2–12 个字，不能和其他大肥鱼重名；每 30 天可改一次。',
               ),
               h(
                 'div',
@@ -2665,7 +2732,7 @@ window.__ModuleLoader__.load({
                 { style: { ...styles.row, marginTop: 12 } },
                 h(
                   'button',
-                  { style: { ...styles.btnGhost, color: '#ff8f8f' }, onClick: deleteAccount, disabled: busy === 'delete' },
+                  { style: { ...styles.btnGhost, color: COLORS.err }, onClick: deleteAccount, disabled: busy === 'delete' },
                   confirmDelete ? '确认删除（不可恢复）' : '删除账号',
                 ),
               ),
@@ -2790,7 +2857,7 @@ window.__ModuleLoader__.load({
               incoming.map((request) =>
                 h(
                   'div',
-                  { key: request.accountId, style: { ...styles.row, padding: '6px 0', borderBottom: `1px solid ${COLORS.border}` } },
+                  { key: request.accountId, style: { ...styles.row, padding: '6px 0', borderBottom: `1px solid ${DFY_BORDER}` } },
                   h('span', null, `${request.name}（${request.level} 级）想加你`),
                   h('button', { style: styles.btnGhost, onClick: () => acceptFriend(request.dfyId), disabled: busy === `friend-accept-${request.dfyId}` }, '接受'),
                 ),
@@ -2802,7 +2869,7 @@ window.__ModuleLoader__.load({
           : friends.map((friend) =>
               h(
                 'div',
-                { key: friend.accountId, style: { ...styles.row, padding: '6px 0', borderBottom: `1px solid ${COLORS.border}` } },
+                { key: friend.accountId, style: { ...styles.row, padding: '6px 0', borderBottom: `1px solid ${DFY_BORDER}` } },
                 h(
                   'div',
                   null,
@@ -2831,7 +2898,7 @@ window.__ModuleLoader__.load({
         friendDetail
           ? h(
               'div',
-              { style: { marginTop: 10, paddingTop: 10, borderTop: `1px solid ${COLORS.border}` } },
+              { style: { marginTop: 10, paddingTop: 10, borderTop: `1px solid ${DFY_BORDER}` } },
               h(
                 'div',
                 { style: styles.row },
@@ -2895,7 +2962,7 @@ window.__ModuleLoader__.load({
               rankEntries.map((entry) =>
                 h(
                   'div',
-                  { key: `${entry.rank}-${entry.petId ?? entry.country ?? entry.province}`, style: { ...styles.row, padding: '5px 0', borderBottom: `1px solid ${COLORS.border}` } },
+                  { key: `${entry.rank}-${entry.petId ?? entry.country ?? entry.province}`, style: { ...styles.row, padding: '5px 0', borderBottom: `1px solid ${DFY_BORDER}` } },
                   h('span', { style: styles.meta }, `#${entry.rank}`),
                   h(
                     'span',
@@ -2909,7 +2976,7 @@ window.__ModuleLoader__.load({
                     { style: styles.meta },
                     entry.petId
                       ? `${rankCountryLabel(entry)}${entry.province ? ` · ${entry.province}` : ''} · ${Number(entry.score).toLocaleString('zh-CN')} 分`
-                      : `${entry.count} 条 · ${entry.online} 在线 · ${Number(entry.score).toLocaleString('zh-CN')} 分`,
+                      : `${entry.count ?? 0} 条 · ${entry.online ?? 0} 在线 · ${Number(entry.score).toLocaleString('zh-CN')} 分`,
                   ),
                 ),
               ),
@@ -2938,7 +3005,7 @@ window.__ModuleLoader__.load({
               events.map((event) =>
                 h(
                   'div',
-                  { key: event.id, style: { ...styles.row, padding: '4px 0', borderBottom: `1px solid ${COLORS.border}` } },
+                  { key: event.id, style: { ...styles.row, padding: '4px 0', borderBottom: `1px solid ${DFY_BORDER}` } },
                   h('span', { style: styles.meta }, new Date(event.created_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })),
                   h('span', { style: { flex: 1, marginLeft: 8 } }, event.text),
                 ),
@@ -2975,7 +3042,7 @@ window.__ModuleLoader__.load({
           : chatMessages.slice(0, 8).map((message) =>
               h(
                 'div',
-                { key: message.id, style: { ...styles.row, padding: '4px 0', borderBottom: `1px solid ${COLORS.border}` } },
+                { key: message.id, style: { ...styles.row, padding: '4px 0', borderBottom: `1px solid ${DFY_BORDER}` } },
                 h('span', { style: styles.meta }, new Date(message.created_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })),
                 h('span', { style: { color: COLORS.ok, marginLeft: 6 } }, message.name),
                 h('span', { style: { flex: 1, marginLeft: 6 } }, message.text),
@@ -3008,17 +3075,56 @@ window.__ModuleLoader__.load({
         conversations.push(entry)
       }
 
+      const coopFriendMatches = friends.filter((friend) => {
+        const query = coopFriendQuery.trim().toLowerCase()
+        if (!query) return true
+        return String(friend.name ?? '').toLowerCase().includes(query)
+          || String(friend.dfyId ?? '').toLowerCase().includes(query)
+      })
+      const coopFriendSelected = friends.find((friend) => friend.dfyId === coopFriendPick) ?? null
+
       const threadCard = h(
         'div',
         { style: styles.card },
         h(
           'div',
-          { style: styles.row },
-          h('span', { style: { fontWeight: 600 } }, `与 ${threadPeer?.name ?? ''} 的会话`),
-          h('span', { style: styles.badge }, threadPeer?.friend ? '好友' : '陌生人'),
-          h('button', { style: styles.link, onClick: () => { setThreadPeer(null); setThreadMessages([]); setThreadInput('') } }, '返回列表'),
-          h('button', { style: styles.link, onClick: refreshThread }, '刷新'),
+          { style: { ...styles.row, alignItems: 'flex-start', flexWrap: 'wrap' } },
+          h(
+            'div',
+            { style: { flex: 1, minWidth: 180 } },
+            h(
+              'div',
+              { style: { display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' } },
+              h('span', { style: { fontWeight: 600 } }, threadPeer?.name ?? ''),
+              h('span', { style: styles.badge }, threadPeer?.friend ? '好友' : '陌生人'),
+              threadPeer ? h('span', { style: styles.dot(threadPeer.online) }) : null,
+              threadPeer?.level ? h('span', { style: styles.meta }, `Lv.${threadPeer.level}`) : null,
+            ),
+            h('div', { style: styles.meta }, `大肥鱼ID：${threadPeer?.dfyId ?? '—'}`),
+            threadPeer?.region || threadPeer?.element
+              ? h('div', { style: styles.meta }, `${threadPeer?.region ?? '未定地区'}${threadPeer?.element ? ` · ${threadPeer.element}` : ''}${threadPeer?.zodiac ? ` · ${threadPeer.zodiac}` : ''}`)
+              : null,
+          ),
+          h(
+            'div',
+            { style: { display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' } },
+            !threadPeer?.friend
+              ? h('button', {
+                  style: styles.btn,
+                  disabled: busy === 'friend-add' || threadFriendRequested,
+                  onClick: async () => {
+                    if (!threadPeer?.dfyId) return
+                    if (await requestFriend(threadPeer.dfyId)) setThreadFriendRequested(true)
+                  },
+                }, threadFriendRequested ? '好友申请已发送' : '加好友')
+              : null,
+            h('button', { style: styles.link, onClick: () => { setThreadPeer(null); setThreadMessages([]); setThreadInput('') } }, '返回列表'),
+            h('button', { style: styles.link, onClick: refreshThread }, '刷新'),
+          ),
         ),
+        threadFriendRequested
+          ? h('div', { style: styles.hint }, '已发送好友申请，对方接受后即可直接私聊。')
+          : null,
         h(
           'div',
           { ref: threadScrollRef, style: { maxHeight: 280, overflowY: 'auto', marginTop: 8 } },
@@ -3035,8 +3141,8 @@ window.__ModuleLoader__.load({
                         maxWidth: '78%',
                         padding: '6px 10px',
                         borderRadius: 10,
-                        background: message.mine ? 'rgba(47,107,255,0.22)' : COLORS.layer2,
-                        border: `1px solid ${COLORS.border}`,
+                        background: message.mine ? `color-mix(in srgb, ${COLORS.brandSolid} 20%, ${DFY_CARD_BG})` : DFY_CARD_BG,
+                        border: `1px solid ${DFY_BORDER_SOFT}`,
                       },
                     },
                     h('div', null, message.text),
@@ -3083,7 +3189,7 @@ window.__ModuleLoader__.load({
                 'div',
                 {
                   key: conversation.dfyId,
-                  style: { ...styles.row, padding: '7px 0', borderBottom: `1px solid ${COLORS.border}`, cursor: 'pointer' },
+                  style: { ...styles.row, padding: '7px 0', borderBottom: `1px solid ${DFY_BORDER}`, cursor: 'pointer' },
                   onClick: () => void openThread(conversation.dfyId),
                 },
                 h('span', { style: styles.badge }, conversation.kind === 'greet' ? '打招呼' : '私聊'),
@@ -3143,7 +3249,7 @@ window.__ModuleLoader__.load({
                 'div',
                 {
                   id: 'dfy-globe-panel',
-                  style: { position: 'relative', flex: '1 1 340px', height: 360, minWidth: 260, overflow: 'hidden', borderRadius: 12, background: 'rgba(5,18,30,0.35)' },
+                  style: { position: 'relative', flex: '1 1 340px', height: 360, minWidth: 260, overflow: 'hidden', borderRadius: 12, background: '#071521', border: `1px solid ${DFY_BORDER_SOFT}` },
                 },
               ),
               h(
@@ -3278,7 +3384,7 @@ window.__ModuleLoader__.load({
             : inventory.map((item) =>
                 h(
                   'div',
-                  { key: item.id, style: { borderBottom: `1px solid ${COLORS.border}`, padding: '6px 0' } },
+                  { key: item.id, style: { borderBottom: `1px solid ${DFY_BORDER}`, padding: '6px 0' } },
                   h(
                     'div',
                     { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 } },
@@ -3340,7 +3446,7 @@ window.__ModuleLoader__.load({
                       style: {
                         padding: '6px',
                         borderRadius: 8,
-                        border: `1px solid ${item.collected ? COLORS.ok : COLORS.border}`,
+                        border: `1px solid ${item.collected ? COLORS.ok : DFY_BORDER}`,
                         opacity: item.collected ? 1 : 0.5,
                         textAlign: 'center',
                       },
@@ -3363,7 +3469,7 @@ window.__ModuleLoader__.load({
                   'div',
                   {
                     key: item.code,
-                    style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 0', borderBottom: `1px solid ${COLORS.border}` },
+                    style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 0', borderBottom: `1px solid ${DFY_BORDER}` },
                   },
                   h('div', null, `${item.icon} ${item.name}`, h('span', { style: styles.badge }, item.rarityName), h('div', { style: styles.meta }, `${item.slotName} · 幸运 +${item.luck}`)),
                   h('button', { style: styles.btnGhost, onClick: () => buyItem(item.code), disabled: busy === `buy-${item.code}` }, `${item.price} 鱼饼`),
@@ -3492,7 +3598,7 @@ window.__ModuleLoader__.load({
                               height: 16,
                               padding: '0 4px',
                               borderRadius: 9,
-                              background: '#ef4444',
+                              background: COLORS.err,
                               color: '#fff',
                               fontSize: 10,
                               lineHeight: '16px',
@@ -3514,7 +3620,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v0.71.0 · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.72.4'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
