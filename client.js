@@ -747,6 +747,14 @@ window.__ModuleLoader__.load({
         }
       }, [])
 
+      const [autoUpdate, setAutoUpdate] = useState(() => {
+        try {
+          return localStorage.getItem(AUTO_UPDATE_KEY) === '1'
+        } catch {
+          return false
+        }
+      })
+
       // 每 24 小时最多自动更新一次连接器；只在连接器页面已加载时运行。
       useEffect(() => {
         if (!autoUpdate) return undefined
@@ -793,13 +801,6 @@ window.__ModuleLoader__.load({
       }, [autoUpdate])
       const [status, setStatus] = useState(null)
       const [profile, setProfile] = useState(null)
-      const [autoUpdate, setAutoUpdate] = useState(() => {
-        try {
-          return localStorage.getItem(AUTO_UPDATE_KEY) === '1'
-        } catch {
-          return false
-        }
-      })
       const [jobs, setJobs] = useState([])
       const [jobId, setJobId] = useState('convenience')
       const [minutes, setMinutes] = useState(30)
