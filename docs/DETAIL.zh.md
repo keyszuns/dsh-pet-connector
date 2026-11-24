@@ -42,6 +42,10 @@ github:keyszuns/dsh-pet-connector
 3. 启用 `dsh-pet-connector`，打开任意会话。
 4. 右键桌面宠物 →「打开大肥鱼世界」→ 生成配对码 → 浏览器加入。
 
+入口位置：右键宠物 → **更多** → **打开大肥鱼世界**。
+
+![右键宠物 → 更多 → 打开大肥鱼世界](images/open-world-menu.png)
+
 ## 配置
 
 | 键 | 默认值 | 说明 |

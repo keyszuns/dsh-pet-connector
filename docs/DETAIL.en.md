@@ -42,6 +42,10 @@ github:keyszuns/dsh-pet-connector
 3. Enable `dsh-pet-connector` and open any session.
 4. Right-click the desktop pet → Open Big Fat Fish World → generate a pairing code → join in browser.
 
+Entry: right-click pet → **More** → **Open Big Fat Fish World**.
+
+![Right-click pet → More → Open Big Fat Fish World](images/open-world-menu.png)
+
 ## Configuration
 
 | Key | Default | Description |

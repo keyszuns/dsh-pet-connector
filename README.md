@@ -37,6 +37,10 @@ github:keyszuns/dsh-pet-connector
 
 安装后启用 `dsh-pet-connector`，打开任意会话，右键桌面宠物选择「打开大肥鱼世界」。
 
+入口位置：右键宠物 → **更多** → **打开大肥鱼世界**。
+
+![右键宠物 → 更多 → 打开大肥鱼世界](docs/images/open-world-menu.png)
+
 服务器地址默认：
 
 ```text
@@ -109,6 +113,10 @@ github:keyszuns/dsh-pet-connector
 You can also install a Release `.tgz` by entering its absolute local path.
 
 Enable `dsh-pet-connector`, open a session, right-click the pet, and choose **Open Big Fat Fish World**.
+
+Entry: right-click pet → **More** → **Open Big Fat Fish World**.
+
+![Right-click pet → More → Open Big Fat Fish World](docs/images/open-world-menu.png)
 
 Default server:
 
