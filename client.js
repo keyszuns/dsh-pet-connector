@@ -3223,6 +3223,8 @@ window.__ModuleLoader__.load({
             statBox('会心', `${stats.crit ?? 0}%`),
             statBox('幸运', stats.luck ?? 0),
           ),
+          h('div', { style: { ...styles.meta, marginTop: 6 } },
+            `综合战力 ${stats.power ?? 0} · 当前秘境建议战力 ${selectedArea?.recommendedPower ?? '—'}`),
           h(
             'div',
             { style: { marginTop: 8, padding: '6px 8px', borderRadius: 8, border: `1px solid ${DFY_BORDER_SOFT}`, background: DFY_GHOST_BG } },
@@ -5037,7 +5039,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '1.7.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '1.7.1'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
