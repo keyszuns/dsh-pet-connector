@@ -3091,6 +3091,8 @@ window.__ModuleLoader__.load({
           null,
           areaPanel,
           actionPanel,
+          h('div', { style: { ...styles.hint, marginTop: 6 } },
+            '修行指引：进秘境攒修为 → 修为满后突破 → 采材料炼丹提高大境界成功率 → 闭关离线积累。'),
           h(
             'label',
             { style: { ...styles.row, marginTop: 8, gap: 6, cursor: 'pointer' } },
@@ -5055,7 +5057,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '1.8.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '1.8.1'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
