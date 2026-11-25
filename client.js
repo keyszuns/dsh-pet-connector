@@ -3507,8 +3507,13 @@ window.__ModuleLoader__.load({
                     'div',
                     { key: entry.id, style: { ...styles.row, padding: '2px 0', gap: 6 } },
                     h('span', { style: styles.meta }, `#${entry.id}`),
-                    h('span', { style: { flex: 1 } }, `${entry.outcome === 'victory' ? '胜' : '败'} · ${entry.enemy}`),
-                    h('span', { style: styles.meta }, `修为 +${entry.xp ?? 0} · 鱼饼 +${entry.coins ?? 0}`),
+                    h('span', { style: { flex: 1 } },
+                      `${entry.mode === 'seclusion' ? '闭关'
+                        : entry.mode === 'breakthrough' ? '突破'
+                          : entry.mode === 'team' ? '组队' : '单人'
+                      } · ${entry.outcome === 'victory' ? '胜' : '败'} · ${entry.enemy}`),
+                    h('span', { style: styles.meta },
+                      `${entry.createdAt ? new Date(entry.createdAt).toLocaleDateString('zh-CN') : ''} · 修为 +${entry.xp ?? 0} · 鱼饼 +${entry.coins ?? 0}`),
                   )),
                 ),
               )
@@ -5147,7 +5152,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '1.9.2'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '1.9.3'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
