@@ -1678,16 +1678,21 @@ window.__ModuleLoader__.load({
         }
       }
 
-      const craftPill = async (pillId) => {
+      const craftPill = async (pillId, count = 1) => {
         setBusy('cultivation-alchemy')
         setError('')
+        let crafted = 0
         try {
-          const data = await postJson('/cultivation/alchemy', { skillId: pillId })
-          if (!data.ok) setError(data.message ?? '炼丹失败')
-          else {
-            setNotice(`炼成「${data.pill ?? '丹药'}」`)
-            await refreshMe()
+          for (let index = 0; index < count; index += 1) {
+            const data = await postJson('/cultivation/alchemy', { skillId: pillId })
+            if (!data.ok) {
+              setError(data.message ?? '炼丹失败')
+              break
+            }
+            crafted += 1
           }
+          if (crafted > 0) setNotice(`炼成 ${crafted} 颗丹药`)
+          await refreshMe()
         } catch {
           setError('炼丹失败')
         } finally {
@@ -2959,6 +2964,11 @@ window.__ModuleLoader__.load({
           runLocked && !runInProgress && serverRunCooldown > 0
             ? h('div', { style: { ...styles.hint, color: COLORS.warn, marginTop: 6 } }, `秘境进行中，${cooldownSeconds} 秒后可再次进入。`)
             : null,
+          h(
+            'div',
+            { style: { ...styles.meta, marginTop: 6 } },
+            `今日：秘境 ${path.today?.runs ?? 0} 场 · 胜 ${path.today?.wins ?? 0} · 修为 +${path.today?.xp ?? 0} · 鱼饼 +${path.today?.coins ?? 0}`,
+          ),
           logBlock,
           lootPanel,
         )
@@ -3069,16 +3079,32 @@ window.__ModuleLoader__.load({
             pills.map((pill) => h(
               'div',
               { key: pill.code, style: { border: `1px solid ${DFY_BORDER}`, borderRadius: 8, padding: '6px 8px' } },
-              h('div', { style: { fontWeight: 700 } }, `${pill.name} ×${pill.owned ?? 0}`),
+              h(
+                'div',
+                { style: styles.row },
+                h('div', { style: { fontWeight: 700 } }, `${pill.name} ×${pill.owned ?? 0}`),
+                h('span', { style: { ...styles.meta, marginLeft: 'auto' } }, `可炼 ×${pill.maxCraftable ?? 0}`),
+              ),
               h('div', { style: styles.meta }, `${pill.recipe} · 大境界 +${pill.bonus}%`),
               h(
-                'button',
-                {
-                  style: { ...styles.btnGhost, marginTop: 4, padding: '4px 8px' },
-                  onClick: () => void craftPill(pill.code),
-                  disabled: busy === 'cultivation-alchemy' || !pill.craftable,
-                },
-                pill.craftable ? '炼丹' : (pill.missing ? `缺 ${pill.missing}` : '材料不足'),
+                'div',
+                { style: { ...styles.row, marginTop: 4, gap: 4 } },
+                h(
+                  'button',
+                  {
+                    style: { ...styles.btnGhost, padding: '4px 8px' },
+                    onClick: () => void craftPill(pill.code),
+                    disabled: busy === 'cultivation-alchemy' || !pill.craftable,
+                  },
+                  pill.craftable ? '炼丹' : (pill.missing ? `缺 ${pill.missing}` : '材料不足'),
+                ),
+                (pill.maxCraftable ?? 0) >= 5
+                  ? h('button', {
+                      style: { ...styles.btnGhost, padding: '4px 8px' },
+                      onClick: () => void craftPill(pill.code, 5),
+                      disabled: busy === 'cultivation-alchemy',
+                    }, '连炼×5')
+                  : null,
               ),
             )),
           ),
@@ -4766,7 +4792,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.95.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.96.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
