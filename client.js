@@ -1695,6 +1695,23 @@ window.__ModuleLoader__.load({
         }
       }
 
+      const claimCultivationAchievement = async (code) => {
+        setBusy('cultivation-achievement')
+        setError('')
+        try {
+          const data = await postJson('/cultivation/achievements/claim', { code })
+          if (!data.ok) setError(data.message ?? '领取失败')
+          else {
+            setNotice('成就奖励已领取')
+            await refreshMe()
+          }
+        } catch {
+          setError('领取失败')
+        } finally {
+          setBusy('')
+        }
+      }
+
       const createCultivationCoop = async () => {
         setBusy('cultivation-coop')
         setError('')
@@ -2655,6 +2672,7 @@ window.__ModuleLoader__.load({
         const skills = path.skills ?? []
         const materials = path.materials ?? []
         const pills = path.pills ?? []
+        const achievements = path.achievements ?? []
         const breakthroughMajor = Boolean(path.breakthroughMajor)
         const selectedPill = pills.find((pill) => pill.code === cultivationPill) ?? null
         const baseChance = Math.round((path.breakthroughChance ?? 0) * 1000) / 10
@@ -3101,6 +3119,40 @@ window.__ModuleLoader__.load({
                     h('span', { style: styles.meta }, `修为 +${entry.xp ?? 0} · 鱼饼 +${entry.coins ?? 0}`),
                   )),
                 ),
+              )
+            : null,
+          achievements.length
+            ? h(
+                'div',
+                { style: { marginTop: 10, borderTop: `1px solid ${DFY_BORDER}`, paddingTop: 10 } },
+                h('div', { style: { fontWeight: 600, marginBottom: 4 } }, '🏅 修仙成就'),
+                achievements.map((achievement) => h(
+                  'div',
+                  {
+                    key: achievement.code,
+                    style: {
+                      ...styles.row,
+                      padding: '4px 0',
+                      borderBottom: `1px solid ${DFY_BORDER_SOFT}`,
+                      opacity: achievement.unlocked ? 1 : 0.55,
+                    },
+                  },
+                  h(
+                    'div',
+                    { style: { flex: 1 } },
+                    h('div', { style: { fontWeight: 600 } }, `${achievement.unlocked ? '✓ ' : '🔒 '}${achievement.title}`),
+                    h('div', { style: styles.meta }, `${achievement.description} · 奖励 ${achievement.rewardCoins} 鱼饼`),
+                  ),
+                  achievement.claimed
+                    ? h('span', { style: { ...styles.meta, color: COLORS.ok } }, '已领取')
+                    : achievement.unlocked
+                      ? h('button', {
+                          style: { ...styles.btnGhost, padding: '4px 8px' },
+                          onClick: () => void claimCultivationAchievement(achievement.code),
+                          disabled: busy === 'cultivation-achievement',
+                        }, '领取')
+                      : h('span', { style: styles.meta }, '未解锁'),
+                )),
               )
             : null,
         )
@@ -4634,7 +4686,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.91.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.92.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
