@@ -3328,7 +3328,7 @@ window.__ModuleLoader__.load({
             ),
             h('span', { style: styles.meta }, path.skillName ?? ''),
           ),
-          selectedSkillInfo
+          selectedSkillInfo && selectedSkillInfo.masteryLevel !== undefined
             ? h('div', { style: { ...styles.meta, marginTop: 4 } },
                 `熟练度 Lv.${selectedSkillInfo.masteryLevel} · 威力 +${selectedSkillInfo.masteryBonus ?? 0}% · 已使用 ${selectedSkillInfo.uses ?? 0} 次`)
             : null,
@@ -5152,7 +5152,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '1.9.3'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '1.9.4'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
