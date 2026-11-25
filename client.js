@@ -1350,9 +1350,15 @@ window.__ModuleLoader__.load({
 
       const say = async (petId) => {
         setBusy('say')
+        setError('')
         try {
-          const data = await postJson(`/world/${encodeURIComponent(petId)}/say`, { text: '世界频道有人想你啦～' })
+          const fromDfyId = profile?.dfyId ?? status?.profile?.dfyId ?? ''
+          const data = await postJson(`/world/${encodeURIComponent(petId)}/say`, {
+            text: '世界频道有人想你啦～',
+            fromDfyId,
+          })
           if (!data.ok) setError(data.message ?? '发送失败')
+          else setNotice(data.from ? '已打招呼，并附上了你的大肥鱼ID' : '已打招呼')
         } catch {
           setError('发送失败')
         } finally {
@@ -1610,6 +1616,40 @@ window.__ModuleLoader__.load({
           if (data.ok) await refreshMessages()
         } catch {
           /* 忽略 */
+        } finally {
+          setBusy('')
+        }
+      }
+
+      const clearMessages = async (mode) => {
+        const thread = mode === 'thread'
+        if (thread && !threadPeer?.dfyId) return
+        const text = thread ? '确定清除当前会话的全部消息吗？' : '确定清除全部消息吗？'
+        if (typeof window !== 'undefined' && typeof window.confirm === 'function' && !window.confirm(text)) return
+        setBusy(thread ? 'messages-clear-thread' : 'messages-clear')
+        setError('')
+        try {
+          const path = thread
+            ? `/messages/thread?dfyId=${encodeURIComponent(threadPeer.dfyId)}`
+            : '/messages'
+          const data = await call(path, { method: 'DELETE' })
+          if (!data?.ok) {
+            setError(data?.message ?? '清除消息失败')
+            return
+          }
+          if (thread) {
+            setThreadMessages([])
+          } else {
+            setThreadPeer(null)
+            setThreadMessages([])
+            setMessages([])
+            setOlderMessages([])
+            setMessagesHasMore(false)
+          }
+          await refreshMessages()
+          setNotice(thread ? '会话已清除' : '全部消息已清除')
+        } catch {
+          setError('清除消息失败')
         } finally {
           setBusy('')
         }
@@ -2846,8 +2886,8 @@ window.__ModuleLoader__.load({
             'input',
             {
               style: { ...styles.select, flex: 1, minWidth: 160 },
-              placeholder: '对方的大肥鱼ID（DFY-XXXX-XX）',
-              maxLength: 12,
+              placeholder: '对方的大肥鱼ID（DFY-XXXX-XXXX）',
+              maxLength: 32,
               value: friendDfy,
               onChange: (event) => setFriendDfy(event.target.value.toUpperCase()),
               onKeyDown: (event) => {
@@ -3119,6 +3159,7 @@ window.__ModuleLoader__.load({
               : null,
             h('button', { style: styles.link, onClick: () => { setThreadPeer(null); setThreadMessages([]); setThreadInput('') } }, '返回列表'),
             h('button', { style: styles.link, onClick: refreshThread }, '刷新'),
+            h('button', { style: styles.link, onClick: () => clearMessages('thread'), disabled: busy === 'messages-clear-thread' }, '清除会话'),
           ),
         ),
         threadFriendRequested
@@ -3180,6 +3221,7 @@ window.__ModuleLoader__.load({
           h('span', { style: { fontWeight: 600 } }, '消息'),
           h('span', { style: styles.meta }, unreadMessages > 0 ? `${unreadMessages} 条未读` : '没有未读'),
           h('button', { style: styles.link, onClick: markMessagesRead, disabled: busy === 'messages-read' }, '全部已读'),
+          h('button', { style: styles.link, onClick: () => clearMessages('all'), disabled: busy === 'messages-clear' }, '清除全部'),
         ),
         conversations.length === 0
           ? h('div', { style: styles.hint }, '还没有消息。陌生人打招呼、好友私聊会出现在这里。')
@@ -3619,7 +3661,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.72.7'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.72.8'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
