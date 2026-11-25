@@ -4,6 +4,8 @@
 
 把本机 **dsh-pet** 接入「大肥鱼世界」的 DSH 插件。
 
+> **不想摸鱼还可修仙！** 除了摸鱼、逛街和日常养成，现在还能进入文字修仙秘境，选择地区、冲击境界、修习本命功法。
+>
 > **前置条件**：先安装并启用 [`dsh-pet`](https://www.npmjs.com/package/dsh-pet)。
 > 本插件只通过 dsh-pet 自带的本地 HTTP 扩展面工作，不修改 dsh-pet，也不读取本地文件或会话。
 
@@ -14,7 +16,8 @@
 - 手动选择城市、生日五行、世界在线
 - 三 Tab 面板：我的鱼 / 世界 / 背包
 - 好友、排行、世界频道、私信、组队
-- 班次、鱼本、装备、商店、签到、任务、运势、鱼潮
+- 班次、修仙秘境、装备、商店、签到、任务、运势、鱼潮
+- 修仙独立境界/头衔、地区解锁、手动突破、本命功法、修仙榜
 - 面板内「关于 / About」页支持中英文介绍
 - 支持 dsh-market 更新 API：手动检查/更新，可选每 24 小时自动更新
 
@@ -82,6 +85,8 @@ https://fish.virtuallife.cloud
 
 A DSH plugin that connects your local **dsh-pet** to **Big Fat Fish World**.
 
+> **Don't feel like working? Go cultivate immortality!** Besides fishing, strolling and daily life, you can now enter a text cultivation realm, choose regions, break through realms, and learn a primary technique.
+>
 > **Prerequisite**: install and enable [`dsh-pet`](https://www.npmjs.com/package/dsh-pet) first.
 > This plugin only talks to dsh-pet's local HTTP extension surface. It does not modify dsh-pet or read local files or sessions.
 
@@ -92,7 +97,8 @@ A DSH plugin that connects your local **dsh-pet** to **Big Fat Fish World**.
 - Manual city choice, birthday five-elements, world presence
 - Three-tab panel: My Fish / World / Bag
 - Friends, leaderboards, world chat, direct messages, co-op
-- Shifts, dungeon, gear, shop, check-in, quests, fortune, tide
+- Shifts, cultivation realm, gear, shop, check-in, quests, fortune, tide
+- Independent cultivation realm/title, region unlocks, manual breakthroughs, primary technique, cultivation leaderboard
 - Bilingual About page inside the panel
 - dsh-market update API: manual check/update and optional 24h auto-update
 
