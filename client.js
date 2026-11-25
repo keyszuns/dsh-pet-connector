@@ -851,6 +851,7 @@ window.__ModuleLoader__.load({
       const [coopRoom, setCoopRoom] = useState(null)
       const [coopFriends, setCoopFriends] = useState([])
       const [cultivationOpen, setCultivationOpen] = useState(false)
+      const [cultivationTab, setCultivationTab] = useState('explore')
       const [cultivationPlayback, setCultivationPlayback] = useState(null)
       const [cultivationBoard, setCultivationBoard] = useState(null)
       const [cultivationScope, setCultivationScope] = useState('global')
@@ -1049,6 +1050,7 @@ window.__ModuleLoader__.load({
           loot: log.loot ?? [],
         })
         setCultivationOpen(true)
+        setCultivationTab('explore')
       }, [])
 
       useEffect(() => {
@@ -2737,67 +2739,131 @@ window.__ModuleLoader__.load({
             )
           : h('div', { style: { ...styles.hint, marginTop: 8 } }, '还没有修行记录。入秘境走一遭，回来看看自己的战报。')
 
-        return h(
-          'div',
+        const tabButton = (key, label, icon) => h(
+          'button',
           {
+            key,
             style: {
-              ...styles.card,
-              border: `1px solid ${DFY_BORDER}`,
-              background: `linear-gradient(180deg, ${DFY_CARD_BG}, ${COLORS.layer1})`,
-              fontFamily: 'ui-serif, "Songti SC", "Noto Serif CJK SC", serif',
+              ...styles.tab(cultivationTab === key),
+              padding: '6px 10px',
+              fontSize: 13,
             },
+            onClick: () => setCultivationTab(key),
           },
-          h(
-            'div',
-            { style: styles.row },
-            h('div', null,
-              h('div', { style: { fontWeight: 700, letterSpacing: 1 } }, '我不上班儿了，我要去修仙！'),
-              h('div', { style: styles.meta }, `大肥鱼 Lv.${path.level}（不参与修仙等级）· 修仙 Lv.${cultivationLevel} · 不限次数`),
-            ),
-            h('span', { style: { ...styles.badge, background: DFY_BADGE_BG } }, cultivationTitle),
-          ),
-          h(
-            'div',
-            { style: { ...styles.row, marginTop: 8, flexWrap: 'wrap' } },
-            h('span', { style: { fontWeight: 600 } }, `境界：${cultivationTitle}`),
-            h('span', { style: styles.meta }, `修为 ${cultivationXp}/${cultivationNext} · 修仙榜第 ${path.rank ?? '—'} 名 · 累计修为 ${path.totalXp ?? 0}`),
-          ),
-          h(
-            'div',
-            { style: { height: 6, borderRadius: 999, background: DFY_TRACK_BG, overflow: 'hidden', marginTop: 6 } },
-            h('div', { style: { width: `${Math.round(cultivationProgress * 100)}%`, height: '100%', background: COLORS.brand } }),
-          ),
-          areas.length
-            ? h(
+          h('span', null, `${icon} ${label}`),
+        )
+
+        const tabBar = h(
+          'div',
+          { style: { ...styles.tabs, marginTop: 10 } },
+          tabButton('explore', '秘境', '🗺️'),
+          tabButton('cultivate', '修炼', '🧘'),
+          tabButton('alchemy', '炼丹', '⚗️'),
+          tabButton('rank', '排行', '☯'),
+        )
+
+        const areaPanel = areas.length
+          ? h(
+              'div',
+              { style: { marginTop: 10, padding: '8px 10px', borderRadius: 8, border: `1px solid ${DFY_BORDER_SOFT}`, background: DFY_GHOST_BG } },
+              h(
                 'div',
-                { style: { marginTop: 10, padding: '8px 10px', borderRadius: 8, border: `1px solid ${DFY_BORDER_SOFT}`, background: DFY_GHOST_BG } },
+                { style: { ...styles.row, flexWrap: 'wrap', gap: 6 } },
+                h('span', { style: { fontWeight: 600 } }, '秘境地区'),
                 h(
-                  'div',
-                  { style: { ...styles.row, flexWrap: 'wrap', gap: 6 } },
-                  h('span', { style: { fontWeight: 600 } }, '秘境地区'),
-                  h(
-                    'select',
-                    {
-                      style: { ...styles.select, flex: '1 1 180px' },
-                      value: cultivationArea || selectedAreaId,
-                      onChange: (event) => setCultivationArea(event.target.value),
-                    },
-                    areas.map((area) => h('option', {
-                      key: area.id,
-                      value: area.id,
-                      disabled: !area.unlocked,
-                    }, `${area.cleared ? '✓ ' : ''}${area.name}${area.unlocked ? '' : `（需 ${area.requiredTitle}）`}`)),
-                  ),
+                  'select',
+                  {
+                    style: { ...styles.select, flex: '1 1 180px' },
+                    value: cultivationArea || selectedAreaId,
+                    onChange: (event) => setCultivationArea(event.target.value),
+                  },
+                  areas.map((area) => h('option', {
+                    key: area.id,
+                    value: area.id,
+                    disabled: !area.unlocked,
+                  }, `${area.cleared ? '✓ ' : ''}${area.name}${area.unlocked ? '' : `（需 ${area.requiredTitle}）`}`)),
                 ),
-                selectedArea
-                  ? h('div', { style: { ...styles.meta, marginTop: 4 } },
-                      `${selectedArea.description} · 敌人：${(selectedArea.enemies ?? []).join('、')} · 收益 x${selectedArea.rewardMult}${selectedArea.cleared ? ` · 已通关 ×${selectedArea.clears}` : ' · 首通奖励待领取'}`)
-                  : null,
-                selectedArea && !selectedArea.unlocked
-                  ? h('div', { style: { ...styles.hint, color: COLORS.err } }, `需要修炼到「${selectedArea.requiredTitle}」才能进入`)
-                  : null,
-              )
+              ),
+              selectedArea
+                ? h('div', { style: { ...styles.meta, marginTop: 4 } },
+                    `${selectedArea.description} · 敌人：${(selectedArea.enemies ?? []).join('、')} · 收益 x${selectedArea.rewardMult}${selectedArea.cleared ? ` · 已通关 ×${selectedArea.clears}` : ' · 首通奖励待领取'}`)
+                : null,
+              selectedArea && !selectedArea.unlocked
+                ? h('div', { style: { ...styles.hint, color: COLORS.err } }, `需要修炼到「${selectedArea.requiredTitle}」才能进入`)
+                : null,
+            )
+          : null
+
+        const actionPanel = h(
+          'div',
+          null,
+          h(
+            'div',
+            { style: { ...styles.row, marginTop: 10, flexWrap: 'wrap' } },
+            h('button', {
+              style: styles.btn,
+              onClick: startCultivation,
+              disabled: busy === 'cultivation' || !path.unlocked
+                || Boolean(selectedArea && !selectedArea.unlocked) || runLocked,
+            }, !path.unlocked ? `Lv.${path.unlockLevel} 解锁` : selectedArea && !selectedArea.unlocked
+              ? '境界不足' : runInProgress ? '秘境进行中…' : serverRunCooldown > 0
+                ? `秘境冷却 ${cooldownSeconds}s` : '独自入秘境'),
+            h('button', {
+              style: styles.btnGhost,
+              onClick: createCultivationCoop,
+              disabled: busy === 'cultivation-coop' || !path.unlocked
+                || Boolean(selectedArea && !selectedArea.unlocked) || runLocked,
+            }, '组队修仙'),
+            coopRoom?.jobId === 'cultivation'
+              ? h('span', { style: styles.meta }, `队伍 ${coopRoom.code} · ${coopRoom.status === 'waiting' ? '等准备' : '战斗中'}`)
+              : null,
+          ),
+          h('div', { style: styles.hint }, '装备的攻/防/血/速会直接参与战斗；队伍相性相合会加成收益，相冲会减成。'),
+        )
+
+        const lootPanel = currentLoot.length
+          ? h(
+              'div',
+              { style: { marginTop: 10, borderTop: `1px solid ${DFY_BORDER}`, paddingTop: 10 } },
+              h('div', { style: { fontWeight: 600, marginBottom: 4 } }, '🎁 本次掉落'),
+              h(
+                'div',
+                { style: { display: 'flex', flexWrap: 'wrap', gap: 6 } },
+                currentLoot.map((item, index) => h(
+                  'span',
+                  {
+                    key: `${item.kind}-${item.code}-${index}`,
+                    style: {
+                      padding: '3px 8px',
+                      borderRadius: 999,
+                      border: `1px solid ${lootColor(item)}`,
+                      color: lootColor(item),
+                      background: DFY_BADGE_BG,
+                      fontWeight: 700,
+                      fontSize: 12,
+                    },
+                  },
+                  `${item.icon ?? ''} ${item.name}${item.kind === 'material' ? ` ×${item.amount}` : ` · ${item.rarityName}`}`,
+                )),
+              ),
+            )
+          : null
+
+        const explorePanel = h(
+          'div',
+          null,
+          areaPanel,
+          actionPanel,
+          runLocked && !runInProgress && serverRunCooldown > 0
+            ? h('div', { style: { ...styles.hint, color: COLORS.warn, marginTop: 6 } }, `秘境进行中，${cooldownSeconds} 秒后可再次进入。`)
             : null,
+          logBlock,
+          lootPanel,
+        )
+
+        const cultivatePanel = h(
+          'div',
+          null,
           h(
             'div',
             { style: { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 6, marginTop: 10 } },
@@ -2828,42 +2894,6 @@ window.__ModuleLoader__.load({
             ),
             h('span', { style: styles.meta }, path.skillName ?? ''),
           ),
-          h(
-            'div',
-            { style: { marginTop: 10, padding: '8px 10px', borderRadius: 8, border: `1px solid ${DFY_BORDER_SOFT}`, background: DFY_GHOST_BG } },
-            h('div', { style: { fontWeight: 700 } }, '材料与炼丹'),
-            h(
-              'div',
-              { style: { display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 5 } },
-              materials.filter((material) => (material.amount ?? 0) > 0).map((material) => h(
-                'span',
-                { key: material.code, style: { ...styles.meta, padding: '2px 6px', borderRadius: 999, background: DFY_BADGE_BG } },
-                `${material.icon ?? ''} ${material.name} ×${material.amount}`,
-              )),
-              materials.every((material) => (material.amount ?? 0) === 0)
-                ? h('span', { style: styles.hint }, '还没有材料，去秘境打怪掉落')
-                : null,
-            ),
-            h(
-              'div',
-              { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 6, marginTop: 8 } },
-              pills.map((pill) => h(
-                'div',
-                { key: pill.code, style: { border: `1px solid ${DFY_BORDER}`, borderRadius: 8, padding: '6px 8px' } },
-                h('div', { style: { fontWeight: 700 } }, `${pill.name} ×${pill.owned ?? 0}`),
-                h('div', { style: styles.meta }, `${pill.recipe} · 大境界 +${pill.bonus}%`),
-                h(
-                  'button',
-                  {
-                    style: { ...styles.btnGhost, marginTop: 4, padding: '4px 8px' },
-                    onClick: () => void craftPill(pill.code),
-                    disabled: busy === 'cultivation-alchemy' || !pill.craftable,
-                  },
-                  pill.craftable ? '炼丹' : '材料不足',
-                ),
-              )),
-            ),
-          ),
           path.breakthroughReady
             ? h(
                 'div',
@@ -2873,7 +2903,7 @@ window.__ModuleLoader__.load({
                   ? h(
                       'div',
                       { style: { marginTop: 4 } },
-                      h('div', { style: { ...styles.meta } }, '大境界突破：不服丹基础成功率仅 10%，可服一颗丹药提升，但最高 90%。'),
+                      h('div', { style: styles.meta }, '大境界突破：不服丹基础成功率仅 10%，可服一颗丹药提升，但最高 90%。'),
                       h(
                         'select',
                         {
@@ -2897,36 +2927,53 @@ window.__ModuleLoader__.load({
                   disabled: busy === 'cultivation-breakthrough',
                 }, busy === 'cultivation-breakthrough' ? '冲击中…' : '冲击境界'),
               )
-            : null,
+            : h('div', { style: { ...styles.hint, marginTop: 10 } }, '修为未满，继续在秘境积累后可冲击境界。'),
+        )
+
+        const alchemyPanel = h(
+          'div',
+          { style: { marginTop: 10, padding: '8px 10px', borderRadius: 8, border: `1px solid ${DFY_BORDER_SOFT}`, background: DFY_GHOST_BG } },
+          h('div', { style: { fontWeight: 700 } }, '材料与炼丹'),
           h(
             'div',
-            { style: { ...styles.row, marginTop: 10, flexWrap: 'wrap' } },
-            h('button', {
-              style: styles.btn,
-              onClick: startCultivation,
-              disabled: busy === 'cultivation' || !path.unlocked
-                || Boolean(selectedArea && !selectedArea.unlocked) || runLocked,
-            }, !path.unlocked ? `Lv.${path.unlockLevel} 解锁` : selectedArea && !selectedArea.unlocked
-              ? '境界不足' : runInProgress ? '秘境进行中…' : serverRunCooldown > 0
-                ? `秘境冷却 ${cooldownSeconds}s` : '独自入秘境'),
-            h('button', {
-              style: styles.btnGhost,
-              onClick: createCultivationCoop,
-              disabled: busy === 'cultivation-coop' || !path.unlocked
-                || Boolean(selectedArea && !selectedArea.unlocked) || runLocked,
-            }, '组队修仙'),
-            coopRoom?.jobId === 'cultivation'
-              ? h('span', { style: styles.meta }, `队伍 ${coopRoom.code} · ${coopRoom.status === 'waiting' ? '等准备' : '战斗中'}`)
+            { style: { display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 5 } },
+            materials.filter((material) => (material.amount ?? 0) > 0).map((material) => h(
+              'span',
+              { key: material.code, style: { ...styles.meta, padding: '2px 6px', borderRadius: 999, background: DFY_BADGE_BG } },
+              `${material.icon ?? ''} ${material.name} ×${material.amount}`,
+            )),
+            materials.every((material) => (material.amount ?? 0) === 0)
+              ? h('span', { style: styles.hint }, '还没有材料，去秘境打怪掉落')
               : null,
           ),
-          h('div', { style: styles.hint }, '装备的攻/防/血/速会直接参与战斗；队伍相性相合会加成收益，相冲会减成。'),
-          coopRoom?.jobId === 'cultivation'
-            ? h('div', { style: { ...styles.hint, marginTop: 6 } }, '组队房间在下方「结伴摸鱼」卡片中，全员准备后由房主开始。')
-            : null,
+          h(
+            'div',
+            { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 6, marginTop: 8 } },
+            pills.map((pill) => h(
+              'div',
+              { key: pill.code, style: { border: `1px solid ${DFY_BORDER}`, borderRadius: 8, padding: '6px 8px' } },
+              h('div', { style: { fontWeight: 700 } }, `${pill.name} ×${pill.owned ?? 0}`),
+              h('div', { style: styles.meta }, `${pill.recipe} · 大境界 +${pill.bonus}%`),
+              h(
+                'button',
+                {
+                  style: { ...styles.btnGhost, marginTop: 4, padding: '4px 8px' },
+                  onClick: () => void craftPill(pill.code),
+                  disabled: busy === 'cultivation-alchemy' || !pill.craftable,
+                },
+                pill.craftable ? '炼丹' : '材料不足',
+              ),
+            )),
+          ),
+        )
+
+        const rankPanel = h(
+          'div',
+          null,
           boardEntries.length
             ? h(
                 'div',
-                { style: { marginTop: 10, borderTop: `1px solid ${DFY_BORDER}`, paddingTop: 10 } },
+                { style: { marginTop: 10, paddingTop: 4 } },
                 h('div', { style: { ...styles.row } },
                   h('span', { style: { fontWeight: 600 } }, '☯ 修仙榜'),
                   h('span', { style: styles.meta }, `${cultivationScope === 'global' ? '全服' : cultivationScope === 'friends' ? '好友' : '本市'} · 共 ${cultivationBoard?.total ?? boardEntries.length} 位修士`),
@@ -2962,7 +3009,7 @@ window.__ModuleLoader__.load({
                   )),
                 ),
               )
-            : null,
+            : h('div', { style: { ...styles.hint, marginTop: 10 } }, '暂无修仙榜数据'),
           history.length
             ? h(
                 'div',
@@ -2981,34 +3028,48 @@ window.__ModuleLoader__.load({
                 ),
               )
             : null,
-          logBlock,
-          currentLoot.length
-            ? h(
-                'div',
-                { style: { marginTop: 10, borderTop: `1px solid ${DFY_BORDER}`, paddingTop: 10 } },
-                h('div', { style: { fontWeight: 600, marginBottom: 4 } }, '🎁 本次掉落'),
-                h(
-                  'div',
-                  { style: { display: 'flex', flexWrap: 'wrap', gap: 6 } },
-                  currentLoot.map((item, index) => h(
-                    'span',
-                    {
-                      key: `${item.kind}-${item.code}-${index}`,
-                      style: {
-                        padding: '3px 8px',
-                        borderRadius: 999,
-                        border: `1px solid ${lootColor(item)}`,
-                        color: lootColor(item),
-                        background: DFY_BADGE_BG,
-                        fontWeight: 700,
-                        fontSize: 12,
-                      },
-                    },
-                    `${item.icon ?? ''} ${item.name}${item.kind === 'material' ? ` ×${item.amount}` : ` · ${item.rarityName}`}`,
-                  )),
-                ),
-              )
-            : null,
+        )
+
+        const tabContent = cultivationTab === 'explore'
+          ? explorePanel
+          : cultivationTab === 'cultivate'
+            ? cultivatePanel
+            : cultivationTab === 'alchemy'
+              ? alchemyPanel
+              : rankPanel
+
+        return h(
+          'div',
+          {
+            style: {
+              ...styles.card,
+              border: `1px solid ${DFY_BORDER}`,
+              background: `linear-gradient(180deg, ${DFY_CARD_BG}, ${COLORS.layer1})`,
+              fontFamily: 'ui-serif, "Songti SC", "Noto Serif CJK SC", serif',
+            },
+          },
+          h(
+            'div',
+            { style: styles.row },
+            h('div', null,
+              h('div', { style: { fontWeight: 700, letterSpacing: 1 } }, '我不上班儿了，我要去修仙！'),
+              h('div', { style: styles.meta }, `大肥鱼 Lv.${path.level}（不参与修仙等级）· 修仙 Lv.${cultivationLevel} · 不限次数`),
+            ),
+            h('span', { style: { ...styles.badge, background: DFY_BADGE_BG } }, cultivationTitle),
+          ),
+          h(
+            'div',
+            { style: { ...styles.row, marginTop: 8, flexWrap: 'wrap' } },
+            h('span', { style: { fontWeight: 600 } }, `境界：${cultivationTitle}`),
+            h('span', { style: styles.meta }, `修为 ${cultivationXp}/${cultivationNext} · 修仙榜第 ${path.rank ?? '—'} 名 · 累计修为 ${path.totalXp ?? 0}`),
+          ),
+          h(
+            'div',
+            { style: { height: 6, borderRadius: 999, background: DFY_TRACK_BG, overflow: 'hidden', marginTop: 6 } },
+            h('div', { style: { width: `${Math.round(cultivationProgress * 100)}%`, height: '100%', background: COLORS.brand } }),
+          ),
+          tabBar,
+          tabContent,
         )
       })()
 
@@ -3121,7 +3182,7 @@ window.__ModuleLoader__.load({
                 'div',
                 { style: { ...styles.body, paddingBottom: 14 } },
                 cultivationCard,
-                cultivationTeamPanel,
+                cultivationTab === 'explore' ? cultivationTeamPanel : null,
               ),
             ),
           )
@@ -4498,7 +4559,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.86.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.87.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
