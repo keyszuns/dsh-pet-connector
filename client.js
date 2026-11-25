@@ -848,6 +848,7 @@ window.__ModuleLoader__.load({
       const [coopCode, setCoopCode] = useState('')
       const [coopRoom, setCoopRoom] = useState(null)
       const [coopFriends, setCoopFriends] = useState([])
+      const [cultivationBoard, setCultivationBoard] = useState(null)
       const [coopInput, setCoopInput] = useState('')
       const [coopFriendQuery, setCoopFriendQuery] = useState('')
       const [coopFriendPick, setCoopFriendPick] = useState('')
@@ -1023,6 +1024,12 @@ window.__ModuleLoader__.load({
         if (friendData?.ok) setCoopFriends(friendData.friends ?? [])
       }, [])
 
+      const refreshCultivationBoard = useCallback(async () => {
+        if (typeof document !== 'undefined' && document.hidden) return
+        const data = await call('/leaderboards?type=cultivation&scope=global')
+        if (data?.ok) setCultivationBoard(data)
+      }, [])
+
       const refreshMessages = useCallback(async () => {
         // 页面不可见时暂停轮询，避免后台标签页持续打服务器。
         if (typeof document !== 'undefined' && document.hidden) return
@@ -1187,6 +1194,13 @@ window.__ModuleLoader__.load({
         const timer = setInterval(() => void refreshCoop(), 3000)
         return () => clearInterval(timer)
       }, [open, tab, refreshCoop])
+
+      useEffect(() => {
+        if (!open || tab !== 'adventure') return undefined
+        void refreshCultivationBoard()
+        const timer = setInterval(() => void refreshCultivationBoard(), 15000)
+        return () => clearInterval(timer)
+      }, [open, tab, refreshCultivationBoard])
 
       const loadRegionOptions = useCallback(async (country, keepCurrent = false) => {
         try {
@@ -2471,6 +2485,12 @@ window.__ModuleLoader__.load({
         if (!path) return null
         const stats = path.stats ?? {}
         const lastLog = path.lastLog
+        const cultivationTitle = path.title ?? '炼气一层'
+        const cultivationLevel = path.cultivationLevel ?? 1
+        const cultivationXp = path.cultivationXp ?? 0
+        const cultivationNext = path.nextXp ?? 1
+        const cultivationProgress = Math.max(0, Math.min(1, path.progress ?? 0))
+        const boardEntries = cultivationBoard?.entries ?? []
         const statBox = (label, value) => h(
           'div',
           { style: { border: `1px solid ${DFY_BORDER}`, borderRadius: 8, padding: '6px 8px', textAlign: 'center' } },
@@ -2532,9 +2552,20 @@ window.__ModuleLoader__.load({
             { style: styles.row },
             h('div', null,
               h('div', { style: { fontWeight: 700, letterSpacing: 1 } }, '我不上班儿了，我要去修仙！'),
-              h('div', { style: styles.meta }, `Lv.${path.unlockLevel} 解锁 · 今日修行 ${path.used}/${path.limit} 次 · 战斗后立即结算`),
+              h('div', { style: styles.meta }, `大肥鱼 Lv.${path.level}（不参与修仙等级）· 修仙 Lv.${cultivationLevel} · 今日修行 ${path.used}/${path.limit} 次`),
             ),
-            h('span', { style: { ...styles.badge, background: DFY_BADGE_BG } }, lastLog?.outcome === 'victory' ? '最近：胜' : lastLog ? '最近：败' : '境界：炼气'),
+            h('span', { style: { ...styles.badge, background: DFY_BADGE_BG } }, cultivationTitle),
+          ),
+          h(
+            'div',
+            { style: { ...styles.row, marginTop: 8, flexWrap: 'wrap' } },
+            h('span', { style: { fontWeight: 600 } }, `境界：${cultivationTitle}`),
+            h('span', { style: styles.meta }, `修为 ${cultivationXp}/${cultivationNext} · 修仙榜第 ${path.rank ?? '—'} 名 · 累计修为 ${path.totalXp ?? 0}`),
+          ),
+          h(
+            'div',
+            { style: { height: 6, borderRadius: 999, background: DFY_TRACK_BG, overflow: 'hidden', marginTop: 6 } },
+            h('div', { style: { width: `${Math.round(cultivationProgress * 100)}%`, height: '100%', background: COLORS.brand } }),
           ),
           h(
             'div',
@@ -2566,6 +2597,35 @@ window.__ModuleLoader__.load({
           h('div', { style: styles.hint }, '装备的攻/防/血/速会直接参与战斗；队伍相性相合会加成收益，相冲会减成。'),
           coopRoom?.jobId === 'cultivation'
             ? h('div', { style: { ...styles.hint, marginTop: 6 } }, '组队房间在下方「结伴摸鱼」卡片中，全员准备后由房主开始。')
+            : null,
+          boardEntries.length
+            ? h(
+                'div',
+                { style: { marginTop: 10, borderTop: `1px solid ${DFY_BORDER}`, paddingTop: 10 } },
+                h('div', { style: { ...styles.row } },
+                  h('span', { style: { fontWeight: 600 } }, '☯ 修仙榜'),
+                  h('span', { style: styles.meta }, `全服 ${cultivationBoard?.total ?? boardEntries.length} 位修士`),
+                ),
+                h(
+                  'div',
+                  { style: { marginTop: 4 } },
+                  boardEntries.slice(0, 8).map((entry) => h(
+                    'div',
+                    {
+                      key: entry.petId,
+                      style: {
+                        ...styles.row,
+                        padding: '3px 0',
+                        borderBottom: `1px solid ${DFY_BORDER_SOFT}`,
+                        fontWeight: entry.mine ? 700 : 400,
+                      },
+                    },
+                    h('span', { style: { ...styles.meta, width: 32 } }, `#${entry.rank}`),
+                    h('span', { style: { flex: 1 } }, entry.name),
+                    h('span', { style: styles.meta }, entry.cultivationTitle ?? entry.label),
+                  )),
+                ),
+              )
             : null,
           logBlock,
         )
@@ -3084,6 +3144,7 @@ window.__ModuleLoader__.load({
         ['gear', '装备'],
         ['gift', '收礼'],
         ['likes', '人气'],
+        ['cultivation', '修仙'],
       ]
       const scopeButtons = [
         ['global', '全服'],
@@ -3940,7 +4001,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.74.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.75.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
