@@ -1573,6 +1573,15 @@ window.__ModuleLoader__.load({
       }
 
       const startCultivation = async () => {
+        const pathNow = profile?.cultivation
+        if (cultivationPlayback && !cultivationPlayback.done) {
+          setError('秘境正在进行，等这次日志走完再进')
+          return
+        }
+        if ((pathNow?.runCooldownMs ?? 0) > 0) {
+          setError(`秘境还在进行，还需等待 ${Math.ceil(pathNow.runCooldownMs / 1000)} 秒`)
+          return
+        }
         setBusy('cultivation')
         setError('')
         try {
@@ -2604,6 +2613,10 @@ window.__ModuleLoader__.load({
         const selectedPill = pills.find((pill) => pill.code === cultivationPill) ?? null
         const baseChance = Math.round((path.breakthroughChance ?? 0) * 1000) / 10
         const activeChance = selectedPill ? selectedPill.chanceWithPill : baseChance
+        const runInProgress = Boolean(cultivationPlayback && !cultivationPlayback.done)
+        const serverRunCooldown = Math.max(0, path.runCooldownMs ?? 0)
+        const runLocked = runInProgress || serverRunCooldown > 0
+        const cooldownSeconds = Math.max(0, Math.ceil(serverRunCooldown / 1000))
         const selectedArea = areas.find((area) => area.id === cultivationArea)
           ?? areas.find((area) => area.unlocked) ?? areas[0] ?? null
         const selectedAreaId = selectedArea?.id ?? ''
@@ -2892,14 +2905,15 @@ window.__ModuleLoader__.load({
               style: styles.btn,
               onClick: startCultivation,
               disabled: busy === 'cultivation' || !path.unlocked
-                || Boolean(selectedArea && !selectedArea.unlocked),
+                || Boolean(selectedArea && !selectedArea.unlocked) || runLocked,
             }, !path.unlocked ? `Lv.${path.unlockLevel} 解锁` : selectedArea && !selectedArea.unlocked
-              ? '境界不足' : '独自入秘境'),
+              ? '境界不足' : runInProgress ? '秘境进行中…' : serverRunCooldown > 0
+                ? `秘境冷却 ${cooldownSeconds}s` : '独自入秘境'),
             h('button', {
               style: styles.btnGhost,
               onClick: createCultivationCoop,
               disabled: busy === 'cultivation-coop' || !path.unlocked
-                || Boolean(selectedArea && !selectedArea.unlocked),
+                || Boolean(selectedArea && !selectedArea.unlocked) || runLocked,
             }, '组队修仙'),
             coopRoom?.jobId === 'cultivation'
               ? h('span', { style: styles.meta }, `队伍 ${coopRoom.code} · ${coopRoom.status === 'waiting' ? '等准备' : '战斗中'}`)
@@ -4484,7 +4498,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.85.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.86.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
