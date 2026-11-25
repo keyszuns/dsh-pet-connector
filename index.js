@@ -661,10 +661,11 @@ class Connector {
       }
 
       if (method === 'POST' && path === '/cultivation/start') {
+        const body = await this.readJson(req)
         const result = await this.platformJson('/v1/world/cultivation/start', {
           method: 'POST',
           headers: { authorization: `Bearer ${this.token}` },
-          body: {},
+          body: { areaId: body?.areaId == null ? undefined : String(body.areaId) },
         }).catch(() => null)
         if (!result) return this.sendJson(res, 502, { ok: false, reason: 'platform-unreachable' })
         if (result.body?.ok) await this.refreshProfile()
