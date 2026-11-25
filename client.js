@@ -850,6 +850,7 @@ window.__ModuleLoader__.load({
       const [coopFriends, setCoopFriends] = useState([])
       const [cultivationBoard, setCultivationBoard] = useState(null)
       const [cultivationScope, setCultivationScope] = useState('global')
+      const [cultivationArea, setCultivationArea] = useState('')
       const [coopInput, setCoopInput] = useState('')
       const [coopFriendQuery, setCoopFriendQuery] = useState('')
       const [coopFriendPick, setCoopFriendPick] = useState('')
@@ -1534,7 +1535,9 @@ window.__ModuleLoader__.load({
         setBusy('cultivation')
         setError('')
         try {
-          const data = await postJson('/cultivation/start', {})
+          const areas = profile?.cultivation?.areas ?? []
+          const fallbackArea = areas.find((area) => area.unlocked)?.id
+          const data = await postJson('/cultivation/start', { areaId: cultivationArea || fallbackArea })
           if (!data.ok) setError(data.message ?? '修仙失败')
           else {
             const outcome = data.log?.outcome === 'victory' ? '秘境已清光' : '道心受挫，且回去再练'
@@ -1552,7 +1555,13 @@ window.__ModuleLoader__.load({
         setBusy('cultivation-coop')
         setError('')
         try {
-          const data = await postJson('/coop/create', { jobId: 'cultivation', minutes: 30 })
+          const areas = profile?.cultivation?.areas ?? []
+          const fallbackArea = areas.find((area) => area.unlocked)?.id
+          const data = await postJson('/coop/create', {
+            jobId: 'cultivation',
+            minutes: 30,
+            areaId: cultivationArea || fallbackArea,
+          })
           if (!data.ok) setError(data.message ?? '创建修仙队伍失败')
           else {
             setCoopRoom(data.coop ?? null)
@@ -2436,7 +2445,7 @@ window.__ModuleLoader__.load({
             { style: styles.row },
             h('span', { style: { fontWeight: 600 } }, room.jobId === 'cultivation' ? '修仙队伍' : '结伴摸鱼'),
             h('span', { style: styles.badge }, roomStatusText),
-            h('span', { style: styles.meta }, `${room.code} · ${room.jobName} · ${room.jobId === 'cultivation' ? '即时战斗' : `${room.minutes} 分钟`} · ${room.memberCount}/${room.maxMembers}`),
+            h('span', { style: styles.meta }, `${room.code} · ${room.jobName}${room.areaName ? ` · ${room.areaName}` : ''} · ${room.jobId === 'cultivation' ? '即时战斗' : `${room.minutes} 分钟`} · ${room.memberCount}/${room.maxMembers}`),
           ),
           h('div', { style: { ...styles.row, marginTop: 8 } }, roomMembers),
           roomCompat,
@@ -2493,6 +2502,10 @@ window.__ModuleLoader__.load({
         const cultivationProgress = Math.max(0, Math.min(1, path.progress ?? 0))
         const boardEntries = cultivationBoard?.entries ?? []
         const history = path.history ?? []
+        const areas = path.areas ?? []
+        const selectedArea = areas.find((area) => area.id === cultivationArea)
+          ?? areas.find((area) => area.unlocked) ?? areas[0] ?? null
+        const selectedAreaId = selectedArea?.id ?? ''
         const statBox = (label, value) => h(
           'div',
           { style: { border: `1px solid ${DFY_BORDER}`, borderRadius: 8, padding: '6px 8px', textAlign: 'center' } },
@@ -2569,6 +2582,37 @@ window.__ModuleLoader__.load({
             { style: { height: 6, borderRadius: 999, background: DFY_TRACK_BG, overflow: 'hidden', marginTop: 6 } },
             h('div', { style: { width: `${Math.round(cultivationProgress * 100)}%`, height: '100%', background: COLORS.brand } }),
           ),
+          areas.length
+            ? h(
+                'div',
+                { style: { marginTop: 10, padding: '8px 10px', borderRadius: 8, border: `1px solid ${DFY_BORDER_SOFT}`, background: DFY_GHOST_BG } },
+                h(
+                  'div',
+                  { style: { ...styles.row, flexWrap: 'wrap', gap: 6 } },
+                  h('span', { style: { fontWeight: 600 } }, '秘境地区'),
+                  h(
+                    'select',
+                    {
+                      style: { ...styles.select, flex: '1 1 180px' },
+                      value: cultivationArea || selectedAreaId,
+                      onChange: (event) => setCultivationArea(event.target.value),
+                    },
+                    areas.map((area) => h('option', {
+                      key: area.id,
+                      value: area.id,
+                      disabled: !area.unlocked,
+                    }, `${area.name}${area.unlocked ? '' : `（需 ${area.requiredTitle}）`}`)),
+                  ),
+                ),
+                selectedArea
+                  ? h('div', { style: { ...styles.meta, marginTop: 4 } },
+                      `${selectedArea.description} · 敌人：${(selectedArea.enemies ?? []).join('、')} · 收益 x${selectedArea.rewardMult}`)
+                  : null,
+                selectedArea && !selectedArea.unlocked
+                  ? h('div', { style: { ...styles.hint, color: COLORS.err } }, `需要修炼到「${selectedArea.requiredTitle}」才能进入`)
+                  : null,
+              )
+            : null,
           h(
             'div',
             { style: { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 6, marginTop: 10 } },
@@ -2585,12 +2629,15 @@ window.__ModuleLoader__.load({
             h('button', {
               style: styles.btn,
               onClick: startCultivation,
-              disabled: busy === 'cultivation' || !path.unlocked || path.used >= path.limit,
-            }, !path.unlocked ? `Lv.${path.unlockLevel} 解锁` : path.used >= path.limit ? '今日修行已尽' : '独自入秘境'),
+              disabled: busy === 'cultivation' || !path.unlocked
+                || Boolean(selectedArea && !selectedArea.unlocked) || path.used >= path.limit,
+            }, !path.unlocked ? `Lv.${path.unlockLevel} 解锁` : selectedArea && !selectedArea.unlocked
+              ? '境界不足' : path.used >= path.limit ? '今日修行已尽' : '独自入秘境'),
             h('button', {
               style: styles.btnGhost,
               onClick: createCultivationCoop,
-              disabled: busy === 'cultivation-coop' || !path.unlocked,
+              disabled: busy === 'cultivation-coop' || !path.unlocked
+                || Boolean(selectedArea && !selectedArea.unlocked),
             }, '组队修仙'),
             coopRoom?.jobId === 'cultivation'
               ? h('span', { style: styles.meta }, `队伍 ${coopRoom.code} · ${coopRoom.status === 'waiting' ? '等准备' : '战斗中'}`)
@@ -4032,7 +4079,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.76.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.77.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
