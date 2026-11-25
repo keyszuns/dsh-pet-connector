@@ -1234,6 +1234,12 @@ window.__ModuleLoader__.load({
       }, [open, tab, refreshCultivationBoard])
 
       useEffect(() => {
+        if (!open || !cultivationOpen || cultivationTab !== 'rank') return undefined
+        void refreshCultivationBoard()
+        return undefined
+      }, [open, cultivationOpen, cultivationTab, refreshCultivationBoard])
+
+      useEffect(() => {
         if (!open || !cultivationOpen || !cultivationPlayback || cultivationPlayback.done) return undefined
         const timer = setInterval(() => {
           setCultivationPlayback((current) => {
@@ -2843,7 +2849,7 @@ window.__ModuleLoader__.load({
                       fontSize: 12,
                     },
                   },
-                  `${item.icon ?? ''} ${item.name}${item.kind === 'material' ? ` ×${item.amount}` : ` · ${item.rarityName}`}`,
+                  `${item.icon ?? ''} ${item.name}${item.kind === 'material' ? ` ×${item.amount}` : ` · ${item.rarityName}${item.equipped ? ' · 已自动装备' : ' · 背包'}`}`,
                 )),
               ),
             )
@@ -2873,6 +2879,17 @@ window.__ModuleLoader__.load({
             statBox('身法', stats.speed ?? 0),
             statBox('会心', `${stats.crit ?? 0}%`),
             statBox('幸运', stats.luck ?? 0),
+          ),
+          h(
+            'div',
+            { style: { marginTop: 8, padding: '6px 8px', borderRadius: 8, border: `1px solid ${DFY_BORDER_SOFT}`, background: DFY_GHOST_BG } },
+            h('div', { style: { fontWeight: 600 } }, `突破预览 → ${path.nextTitle ?? '下一境界'}`),
+            h('div', { style: { ...styles.meta, marginTop: 2 } },
+              `攻击 +${Math.max(0, (path.nextStats?.attack ?? stats.attack) - (stats.attack ?? 0))}`
+              + ` · 防御 +${Math.max(0, (path.nextStats?.defense ?? stats.defense) - (stats.defense ?? 0))}`
+              + ` · 气血 +${Math.max(0, (path.nextStats?.hp ?? stats.hp) - (stats.hp ?? 0))}`
+              + ` · 身法 +${Math.max(0, (path.nextStats?.speed ?? stats.speed) - (stats.speed ?? 0))}`
+              + ` · 修为上限 ${path.nextMaxXp ?? '—'}`),
           ),
           h(
             'div',
@@ -4559,7 +4576,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.87.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.88.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
