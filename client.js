@@ -849,6 +849,7 @@ window.__ModuleLoader__.load({
       const [coopRoom, setCoopRoom] = useState(null)
       const [coopFriends, setCoopFriends] = useState([])
       const [cultivationBoard, setCultivationBoard] = useState(null)
+      const [cultivationScope, setCultivationScope] = useState('global')
       const [coopInput, setCoopInput] = useState('')
       const [coopFriendQuery, setCoopFriendQuery] = useState('')
       const [coopFriendPick, setCoopFriendPick] = useState('')
@@ -1026,9 +1027,9 @@ window.__ModuleLoader__.load({
 
       const refreshCultivationBoard = useCallback(async () => {
         if (typeof document !== 'undefined' && document.hidden) return
-        const data = await call('/leaderboards?type=cultivation&scope=global')
+        const data = await call(`/leaderboards?type=cultivation&scope=${encodeURIComponent(cultivationScope)}`)
         if (data?.ok) setCultivationBoard(data)
-      }, [])
+      }, [cultivationScope])
 
       const refreshMessages = useCallback(async () => {
         // 页面不可见时暂停轮询，避免后台标签页持续打服务器。
@@ -2491,6 +2492,7 @@ window.__ModuleLoader__.load({
         const cultivationNext = path.nextXp ?? 1
         const cultivationProgress = Math.max(0, Math.min(1, path.progress ?? 0))
         const boardEntries = cultivationBoard?.entries ?? []
+        const history = path.history ?? []
         const statBox = (label, value) => h(
           'div',
           { style: { border: `1px solid ${DFY_BORDER}`, borderRadius: 8, padding: '6px 8px', textAlign: 'center' } },
@@ -2604,12 +2606,23 @@ window.__ModuleLoader__.load({
                 { style: { marginTop: 10, borderTop: `1px solid ${DFY_BORDER}`, paddingTop: 10 } },
                 h('div', { style: { ...styles.row } },
                   h('span', { style: { fontWeight: 600 } }, '☯ 修仙榜'),
-                  h('span', { style: styles.meta }, `全服 ${cultivationBoard?.total ?? boardEntries.length} 位修士`),
+                  h('span', { style: styles.meta }, `${cultivationScope === 'global' ? '全服' : cultivationScope === 'friends' ? '好友' : '本市'} · 共 ${cultivationBoard?.total ?? boardEntries.length} 位修士`),
+                ),
+                h(
+                  'div',
+                  { style: { ...styles.row, gap: 6, marginTop: 4, flexWrap: 'wrap' } },
+                  [['global', '全服'], ['friends', '好友'], ['city', '本市']].map(([value, label]) =>
+                    h('button', {
+                      key: value,
+                      style: styles.tab(cultivationScope === value),
+                      onClick: () => setCultivationScope(value),
+                    }, label),
+                  ),
                 ),
                 h(
                   'div',
                   { style: { marginTop: 4 } },
-                  boardEntries.slice(0, 8).map((entry) => h(
+                  boardEntries.slice(0, 10).map((entry) => h(
                     'div',
                     {
                       key: entry.petId,
@@ -2623,6 +2636,24 @@ window.__ModuleLoader__.load({
                     h('span', { style: { ...styles.meta, width: 32 } }, `#${entry.rank}`),
                     h('span', { style: { flex: 1 } }, entry.name),
                     h('span', { style: styles.meta }, entry.cultivationTitle ?? entry.label),
+                  )),
+                ),
+              )
+            : null,
+          history.length
+            ? h(
+                'div',
+                { style: { marginTop: 10, borderTop: `1px solid ${DFY_BORDER}`, paddingTop: 10 } },
+                h('div', { style: { fontWeight: 600 } }, '📜 修行札记'),
+                h(
+                  'div',
+                  { style: { marginTop: 4 } },
+                  history.map((entry) => h(
+                    'div',
+                    { key: entry.id, style: { ...styles.row, padding: '2px 0', gap: 6 } },
+                    h('span', { style: styles.meta }, `#${entry.id}`),
+                    h('span', { style: { flex: 1 } }, `${entry.outcome === 'victory' ? '胜' : '败'} · ${entry.enemy}`),
+                    h('span', { style: styles.meta }, `修为 +${entry.xp ?? 0} · 鱼饼 +${entry.coins ?? 0}`),
                   )),
                 ),
               )
@@ -4001,7 +4032,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.75.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.76.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
