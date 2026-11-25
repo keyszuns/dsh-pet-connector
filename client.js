@@ -850,6 +850,8 @@ window.__ModuleLoader__.load({
       const [coopCode, setCoopCode] = useState('')
       const [coopRoom, setCoopRoom] = useState(null)
       const [coopFriends, setCoopFriends] = useState([])
+      const [cultivationOpen, setCultivationOpen] = useState(false)
+      const [cultivationPlayback, setCultivationPlayback] = useState(null)
       const [cultivationBoard, setCultivationBoard] = useState(null)
       const [cultivationScope, setCultivationScope] = useState('global')
       const [cultivationArea, setCultivationArea] = useState('')
@@ -1034,6 +1036,19 @@ window.__ModuleLoader__.load({
         if (data?.ok) setCultivationBoard(data)
       }, [cultivationScope])
 
+      const beginCultivationPlayback = useCallback((log) => {
+        if (!log?.segments?.length) return
+        setCultivationPlayback({
+          segments: log.segments,
+          elapsed: 5,
+          done: false,
+          harvestLog: log.harvestLog ?? '',
+          coins: log.coins ?? 0,
+          xp: log.xp ?? 0,
+        })
+        setCultivationOpen(true)
+      }, [])
+
       const refreshMessages = useCallback(async () => {
         // 页面不可见时暂停轮询，避免后台标签页持续打服务器。
         if (typeof document !== 'undefined' && document.hidden) return
@@ -1193,11 +1208,11 @@ window.__ModuleLoader__.load({
 
       useEffect(() => {
         if (!open) return undefined
-        if (!['adventure', 'friends'].includes(tab)) return undefined
+        if (!['adventure', 'friends'].includes(tab) && !cultivationOpen) return undefined
         void refreshCoop()
         const timer = setInterval(() => void refreshCoop(), 3000)
         return () => clearInterval(timer)
-      }, [open, tab, refreshCoop])
+      }, [open, tab, cultivationOpen, refreshCoop])
 
       useEffect(() => {
         if (!open || tab !== 'adventure') return undefined
@@ -1205,6 +1220,20 @@ window.__ModuleLoader__.load({
         const timer = setInterval(() => void refreshCultivationBoard(), 15000)
         return () => clearInterval(timer)
       }, [open, tab, refreshCultivationBoard])
+
+      useEffect(() => {
+        if (!open || !cultivationOpen || !cultivationPlayback || cultivationPlayback.done) return undefined
+        const timer = setInterval(() => {
+          setCultivationPlayback((current) => {
+            if (!current || current.done) return current
+            const elapsed = Math.min(300, current.elapsed + 5)
+            const done = elapsed >= 300
+            if (done) void refreshMe()
+            return { ...current, elapsed, done }
+          })
+        }, 5000)
+        return () => clearInterval(timer)
+      }, [open, cultivationOpen, cultivationPlayback?.done, refreshMe])
 
       const loadRegionOptions = useCallback(async (country, keepCurrent = false) => {
         try {
@@ -1542,8 +1571,8 @@ window.__ModuleLoader__.load({
           const data = await postJson('/cultivation/start', { areaId: cultivationArea || fallbackArea })
           if (!data.ok) setError(data.message ?? '修仙失败')
           else {
-            const outcome = data.log?.outcome === 'victory' ? '秘境已清光' : '道心受挫，且回去再练'
-            setNotice(`修仙归来：${outcome}`)
+            beginCultivationPlayback(data.log)
+            setNotice('进入秘境，日志将每 5 秒推进一步')
             await refreshMe()
           }
         } catch {
@@ -2161,8 +2190,13 @@ window.__ModuleLoader__.load({
           if (!data.ok) setError(data.message ?? '开始结伴失败')
           else {
             setCoopRoom(data.coop ?? null)
+            if (data.coop?.jobId === 'cultivation') {
+              beginCultivationPlayback(data.coop?.cultivation)
+              setNotice('修仙队伍进入秘境，日志每 5 秒推进')
+            } else {
+              setNotice('结伴摸鱼开始，和日常摸鱼/下楼溜达互不冲突')
+            }
             await refreshMe()
-            setNotice('结伴摸鱼开始，和日常摸鱼/下楼溜达互不冲突')
           }
         } catch {
           setError('开始结伴失败')
@@ -2546,46 +2580,108 @@ window.__ModuleLoader__.load({
           h('div', { style: { ...styles.meta, fontSize: 11 } }, label),
           h('div', { style: { fontWeight: 700, fontFamily: 'Consolas, "Courier New", monospace' } }, value),
         )
-        const logBlock = lastLog
+        const playback = cultivationPlayback
+        const elapsed = playback?.elapsed ?? 300
+        const playbackDone = playback?.done ?? true
+        const allSegments = playback?.segments
+          ?? lastLog?.segments
+          ?? (lastLog?.battleLog ? String(lastLog.battleLog).split('\n') : [])
+        const visibleSegments = playback
+          ? allSegments.filter((line) => {
+              const match = /^\[(\d{2}):(\d{2})\]/.exec(line)
+              if (!match) return true
+              return Number(match[1]) * 60 + Number(match[2]) <= elapsed
+            })
+          : allSegments
+        const harvestText = playback
+          ? (playbackDone ? playback.harvestLog : '')
+          : String(lastLog?.harvestLog ?? '')
+        const logLine = (line, index) => h(
+          'div',
+          {
+            key: index,
+            style: {
+              padding: '1px 0',
+              color: /装备|掉落/.test(line) ? COLORS.ok : COLORS.text,
+              fontWeight: /装备|掉落/.test(line) ? 700 : 400,
+              background: /装备|掉落/.test(line) ? DFY_BADGE_BG : 'transparent',
+              borderRadius: /装备|掉落/.test(line) ? 4 : 0,
+            },
+          },
+          line,
+        )
+        const logBlock = (playback || lastLog)
           ? h(
               'div',
               { style: { marginTop: 10, borderTop: `1px solid ${DFY_BORDER}`, paddingTop: 10 } },
-              h('div', { style: { fontWeight: 600, marginBottom: 4 } }, '⚔ 战斗日志'),
-              h('pre', {
-                style: {
-                  margin: 0,
-                  padding: '8px 10px',
-                  borderRadius: 8,
-                  background: DFY_GHOST_BG,
-                  border: `1px solid ${DFY_BORDER_SOFT}`,
-                  maxHeight: 230,
-                  overflow: 'auto',
-                  whiteSpace: 'pre-wrap',
-                  fontFamily: 'Consolas, "Courier New", monospace',
-                  fontSize: 12,
-                  lineHeight: 1.7,
-                  color: COLORS.text,
+              h(
+                'div',
+                { style: { ...styles.row, marginBottom: 4 } },
+                h('span', { style: { fontWeight: 600 } }, '⚔ 秘境战斗日志'),
+                playback
+                  ? h('span', { style: styles.meta }, `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')} / 5:00 · 每 5 秒推进`)
+                  : h('span', { style: styles.meta }, '最近一次修行'),
+              ),
+              playback
+                ? h(
+                    'div',
+                    { style: { height: 5, borderRadius: 999, background: DFY_TRACK_BG, overflow: 'hidden', marginBottom: 6 } },
+                    h('div', { style: { width: `${Math.round(elapsed / 300 * 100)}%`, height: '100%', background: COLORS.brand } }),
+                  )
+                : null,
+              h(
+                'div',
+                {
+                  style: {
+                    margin: 0,
+                    padding: '8px 10px',
+                    borderRadius: 8,
+                    background: DFY_GHOST_BG,
+                    border: `1px solid ${DFY_BORDER_SOFT}`,
+                    maxHeight: 280,
+                    overflow: 'auto',
+                    fontFamily: 'Consolas, "Courier New", monospace',
+                    fontSize: 12,
+                    lineHeight: 1.65,
+                  },
                 },
-              }, String(lastLog.battleLog ?? '')),
-              h('div', { style: { fontWeight: 600, margin: '8px 0 4px' } }, '🌾 收获日志'),
-              h('pre', {
-                style: {
-                  margin: 0,
-                  padding: '8px 10px',
-                  borderRadius: 8,
-                  background: DFY_GHOST_BG,
-                  border: `1px solid ${DFY_BORDER_SOFT}`,
-                  whiteSpace: 'pre-wrap',
-                  fontFamily: 'Consolas, "Courier New", monospace',
-                  fontSize: 12,
-                  lineHeight: 1.7,
-                  color: COLORS.text,
-                },
-              }, String(lastLog.harvestLog ?? '')),
-              h('div', { style: { fontWeight: 600, margin: '8px 0 4px' } }, '☯ 机缘'),
-              h('div', { style: styles.hint }, String(lastLog.opportunity ?? '寻常无事')),
+                visibleSegments.map(logLine),
+                playback && !playbackDone
+                  ? h('div', { style: { ...styles.hint, marginTop: 6 } }, '静候 5 秒，秘境还在继续…')
+                  : null,
+              ),
+              playbackDone && harvestText
+                ? h(
+                    'div',
+                    null,
+                    h('div', { style: { fontWeight: 600, margin: '8px 0 4px' } }, '🌾 收获日志'),
+                    h('pre', {
+                      style: {
+                        margin: 0,
+                        padding: '8px 10px',
+                        borderRadius: 8,
+                        background: DFY_GHOST_BG,
+                        border: `1px solid ${DFY_BORDER_SOFT}`,
+                        whiteSpace: 'pre-wrap',
+                        fontFamily: 'Consolas, "Courier New", monospace',
+                        fontSize: 12,
+                        lineHeight: 1.7,
+                        color: COLORS.text,
+                      },
+                    }, harvestText),
+                  )
+                : null,
+              playbackDone && lastLog
+                ? h(
+                    'div',
+                    null,
+                    h('div', { style: { fontWeight: 600, margin: '8px 0 4px' } }, '☯ 机缘'),
+                    h('div', { style: styles.hint }, String(lastLog.opportunity ?? '寻常无事')),
+                  )
+                : null,
             )
           : h('div', { style: { ...styles.hint, marginTop: 8 } }, '还没有修行记录。入秘境走一遭，回来看看自己的战报。')
+
         return h(
           'div',
           {
@@ -2601,7 +2697,7 @@ window.__ModuleLoader__.load({
             { style: styles.row },
             h('div', null,
               h('div', { style: { fontWeight: 700, letterSpacing: 1 } }, '我不上班儿了，我要去修仙！'),
-              h('div', { style: styles.meta }, `大肥鱼 Lv.${path.level}（不参与修仙等级）· 修仙 Lv.${cultivationLevel} · 今日修行 ${path.used}/${path.limit} 次`),
+              h('div', { style: styles.meta }, `大肥鱼 Lv.${path.level}（不参与修仙等级）· 修仙 Lv.${cultivationLevel} · 不限次数`),
             ),
             h('span', { style: { ...styles.badge, background: DFY_BADGE_BG } }, cultivationTitle),
           ),
@@ -2697,9 +2793,9 @@ window.__ModuleLoader__.load({
               style: styles.btn,
               onClick: startCultivation,
               disabled: busy === 'cultivation' || !path.unlocked
-                || Boolean(selectedArea && !selectedArea.unlocked) || path.used >= path.limit,
+                || Boolean(selectedArea && !selectedArea.unlocked),
             }, !path.unlocked ? `Lv.${path.unlockLevel} 解锁` : selectedArea && !selectedArea.unlocked
-              ? '境界不足' : path.used >= path.limit ? '今日修行已尽' : '独自入秘境'),
+              ? '境界不足' : '独自入秘境'),
             h('button', {
               style: styles.btnGhost,
               onClick: createCultivationCoop,
@@ -2775,6 +2871,121 @@ window.__ModuleLoader__.load({
           logBlock,
         )
       })()
+
+      const cultivationEntry = me?.cultivation
+        ? h(
+            'div',
+            { style: styles.card },
+            h(
+              'div',
+              { style: styles.row },
+              h(
+                'div',
+                null,
+                h('div', { style: { fontWeight: 700 } }, '我不上班儿了，我要去修仙！'),
+                h('div', { style: styles.meta }, `独立境界「${me.cultivation.title ?? '炼气一层'}」· 八处秘境 · 手动突破 · 本命功法`),
+              ),
+              h('span', { style: { ...styles.badge, background: DFY_BADGE_BG } }, '独立玩法'),
+            ),
+            h('div', { style: { ...styles.hint, marginTop: 6 } }, '秘境每次约 5 分钟：前 4 分钟普通/精英怪，最后 1 分钟首领。需从独立修仙窗口进入。'),
+            h(
+              'button',
+              { style: { ...styles.btn, marginTop: 8 }, onClick: () => setCultivationOpen(true) },
+              '打开修仙秘境',
+            ),
+          )
+        : null
+
+      const cultivationTeamPanel = (() => {
+        if (coopRoom?.jobId === 'cultivation') {
+          const members = coopRoom.members ?? []
+          return h(
+            'div',
+            { style: { ...styles.card, marginTop: 10, border: `1px solid ${DFY_BORDER}` } },
+            h(
+              'div',
+              { style: styles.row },
+              h('span', { style: { fontWeight: 700 } }, '修仙队伍'),
+              h('span', { style: styles.badge }, coopRoom.status === 'waiting' ? '准备中' : '已完成'),
+              h('span', { style: styles.meta }, `${coopRoom.code} · ${coopRoom.areaName ?? ''} · ${members.length}/${coopRoom.maxMembers}`),
+            ),
+            members.map((member) => h(
+              'div',
+              { key: member.petId, style: { ...styles.row, padding: '4px 0' } },
+              h('span', null, `${member.name ?? '道友'} ${member.isHost ? '（房主）' : ''}`),
+              h('span', { style: { ...styles.meta, color: member.ready ? COLORS.ok : COLORS.muted } }, member.ready ? '已准备' : '未准备'),
+            )),
+            h(
+              'div',
+              { style: { ...styles.row, marginTop: 8, flexWrap: 'wrap' } },
+              coopRoom.status === 'waiting'
+                ? h('button', { style: styles.btnGhost, onClick: coopReady, disabled: busy === 'coop-ready' }, coopRoom.youReady ? '取消准备' : '准备')
+                : null,
+              coopRoom.isHost && coopRoom.status === 'waiting'
+                ? h('button', { style: styles.btn, onClick: coopStart, disabled: busy === 'coop-start' || !coopRoom.canStart }, coopRoom.canStart ? '开始秘境' : '等全员准备')
+                : null,
+              coopRoom.status === 'waiting'
+                ? h('button', { style: styles.btnGhost, onClick: coopLeave, disabled: busy === 'coop-leave' }, coopRoom.isHost ? '解散队伍' : '离开队伍')
+                : h('button', { style: styles.btnGhost, onClick: coopDismiss }, '收起'),
+            ),
+            h('div', { style: styles.hint }, '好友在「冒险 → 结伴摸鱼」里输入房间码加入；全员达到该地区境界才能开始。'),
+          )
+        }
+        return h(
+          'div',
+          { style: { ...styles.card, marginTop: 10 } },
+          h('div', { style: { fontWeight: 700 } }, '组队修仙'),
+          h('div', { style: { ...styles.hint, marginTop: 4 } }, '最多 4 人，每人独立结算。创建后把房间码发给好友。'),
+          h(
+            'button',
+            { style: { ...styles.btnGhost, marginTop: 8 }, onClick: createCultivationCoop, disabled: busy === 'cultivation-coop' },
+            busy === 'cultivation-coop' ? '创建中…' : '创建修仙队伍',
+          ),
+        )
+      })()
+
+      const cultivationModal = cultivationOpen
+        ? h(
+            'div',
+            {
+              style: { ...styles.backdrop, zIndex: 2147483010 },
+              onMouseDown: (event) => { if (event.target === event.currentTarget) setCultivationOpen(false) },
+            },
+            h(
+              'div',
+              {
+                style: {
+                  ...styles.panel,
+                  width: 'min(860px, calc(100vw - 32px))',
+                  maxHeight: 'min(820px, calc(100vh - 48px))',
+                },
+                role: 'dialog',
+                'aria-label': '修仙秘境',
+              },
+              h(
+                'div',
+                { style: styles.header },
+                h(
+                  'div',
+                  null,
+                  h('h2', { style: { ...styles.title, letterSpacing: 2 } }, '修仙秘境'),
+                  h('div', { style: styles.sub }, '独立于大肥鱼的修仙等级 · 每 5 秒推进一段日志 · 一次约 5 分钟'),
+                ),
+                h(
+                  'div',
+                  { style: { display: 'flex', gap: 6 } },
+                  h('button', { style: styles.btnGhost, onClick: () => setCultivationOpen(false) }, '关闭'),
+                ),
+              ),
+              h(
+                'div',
+                { style: { ...styles.body, paddingBottom: 14 } },
+                cultivationCard,
+                cultivationTeamPanel,
+              ),
+            ),
+          )
+        : null
 
       const meTab = h(
         'div',
@@ -3030,7 +3241,7 @@ window.__ModuleLoader__.load({
               ),
               h('div', { style: styles.hint }, '收益由服务端结算：经验按 4/分钟、鱼饼按 1.5/分钟，再乘岗位与五行系数。'),
             ),
-        cultivationCard,
+        cultivationEntry,
         me?.explore
           ? h(
               'div',
@@ -4081,6 +4292,7 @@ window.__ModuleLoader__.load({
         React.Fragment,
         null,
         accessoryLayer,
+        cultivationOpen ? cultivationModal : null,
         h(
         'div',
         { style: styles.backdrop, onMouseDown: (event) => { if (event.target === event.currentTarget) setOpen(false) } },
@@ -4146,7 +4358,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.80.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.81.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
