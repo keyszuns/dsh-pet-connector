@@ -1173,7 +1173,10 @@ class Connector {
         const body = await this.readJson(req)
         const result = await this.platformJson(`/v1/world/${encodeURIComponent(sayMatch[1])}/say`, {
           method: 'POST',
-          body: { text: String(body.text ?? '').slice(0, 200) },
+          body: {
+            text: String(body.text ?? '').slice(0, 200),
+            fromDfyId: body.fromDfyId == null ? undefined : String(body.fromDfyId).slice(0, 64),
+          },
         }).catch(() => null)
         if (!result) return this.sendJson(res, 502, { ok: false, reason: 'platform-unreachable' })
         return this.sendJson(res, result.status, result.body)
