@@ -3527,6 +3527,11 @@ window.__ModuleLoader__.load({
             h('div', null,
               h('div', { style: { fontWeight: 700, letterSpacing: 1 } }, '我不上班儿了，我要去修仙！'),
               h('div', { style: styles.meta }, `大肥鱼 Lv.${path.level}（不参与修仙等级）· 修仙 Lv.${cultivationLevel} · 不限次数`),
+              path.profileStats
+                ? h('div', { style: styles.meta },
+                    `修行档案：秘境 ${path.profileStats.runs ?? 0} 次 · 胜 ${path.profileStats.wins ?? 0}`
+                    + ` · 通关 ${path.profileStats.clears ?? 0} 地 · 闭关 ${path.profileStats.seclusions ?? 0} 次 / ${path.profileStats.seclusionHours ?? 0} 小时`)
+                : null,
             ),
             h('span', { style: { ...styles.badge, background: DFY_BADGE_BG } }, cultivationTitle),
           ),
@@ -5050,7 +5055,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '1.7.3'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '1.8.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
