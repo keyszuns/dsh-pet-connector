@@ -3112,6 +3112,10 @@ window.__ModuleLoader__.load({
                 h('span', { style: styles.meta }, '在已解锁且难度为轻松/适中的秘境中选择收益最高的'),
               )
             : null,
+          path.seclusion === undefined
+            ? h('div', { style: { ...styles.hint, color: COLORS.warn, marginTop: 6 } },
+                '当前服务端为旧版：闭关、每日任务、五行、成就等新功能需要部署新版后端后显示。')
+            : null,
           path.seclusion
             ? h(
             'div',
@@ -5039,7 +5043,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '1.7.1'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '1.7.2'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
