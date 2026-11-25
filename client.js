@@ -851,7 +851,12 @@ window.__ModuleLoader__.load({
       const [coopRoom, setCoopRoom] = useState(null)
       const [coopFriends, setCoopFriends] = useState([])
       const [cultivationOpen, setCultivationOpen] = useState(false)
-      const [cultivationTab, setCultivationTab] = useState('explore')
+      const [cultivationTab, setCultivationTab] = useState(() => {
+        try {
+          const saved = localStorage.getItem('dfy.cultivation.tab')
+          return ['explore', 'cultivate', 'alchemy', 'rank'].includes(saved) ? saved : 'explore'
+        } catch { return 'explore' }
+      })
       const [autoCultivation, setAutoCultivation] = useState(() => {
         try { return localStorage.getItem('dfy.cultivation.auto') === '1' } catch { return false }
       })
@@ -866,10 +871,21 @@ window.__ModuleLoader__.load({
       const [cultivationPlayback, setCultivationPlayback] = useState(null)
       const [cultivationBoard, setCultivationBoard] = useState(null)
       const [cultivationScope, setCultivationScope] = useState('global')
-      const [cultivationArea, setCultivationArea] = useState('')
+      const [cultivationArea, setCultivationArea] = useState(() => {
+        try { return localStorage.getItem('dfy.cultivation.area') ?? '' } catch { return '' }
+      })
       const [cultivationPill, setCultivationPill] = useState('')
       const [breakthroughConfirm, setBreakthroughConfirm] = useState(false)
       const [seclusionConfirmHours, setSeclusionConfirmHours] = useState(0)
+      useEffect(() => {
+        try { localStorage.setItem('dfy.cultivation.tab', cultivationTab) } catch { /* ignore */ }
+      }, [cultivationTab])
+      useEffect(() => {
+        try {
+          if (cultivationArea) localStorage.setItem('dfy.cultivation.area', cultivationArea)
+          else localStorage.removeItem('dfy.cultivation.area')
+        } catch { /* ignore */ }
+      }, [cultivationArea])
       const [coopInput, setCoopInput] = useState('')
       const [coopFriendQuery, setCoopFriendQuery] = useState('')
       const [coopFriendPick, setCoopFriendPick] = useState('')
@@ -5061,7 +5077,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '1.8.2'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '1.8.3'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
