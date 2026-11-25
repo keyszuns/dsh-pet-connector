@@ -855,6 +855,7 @@ window.__ModuleLoader__.load({
       const [cultivationBoard, setCultivationBoard] = useState(null)
       const [cultivationScope, setCultivationScope] = useState('global')
       const [cultivationArea, setCultivationArea] = useState('')
+      const [cultivationPill, setCultivationPill] = useState('')
       const [coopInput, setCoopInput] = useState('')
       const [coopFriendQuery, setCoopFriendQuery] = useState('')
       const [coopFriendPick, setCoopFriendPick] = useState('')
@@ -1045,6 +1046,7 @@ window.__ModuleLoader__.load({
           harvestLog: log.harvestLog ?? '',
           coins: log.coins ?? 0,
           xp: log.xp ?? 0,
+          loot: log.loot ?? [],
         })
         setCultivationOpen(true)
       }, [])
@@ -1594,10 +1596,11 @@ window.__ModuleLoader__.load({
         setBusy('cultivation-breakthrough')
         setError('')
         try {
-          const data = await postJson('/cultivation/breakthrough', {})
+          const data = await postJson('/cultivation/breakthrough', { pillId: cultivationPill || undefined })
           if (!data.ok) setError(data.message ?? '突破失败')
           else {
-            setNotice(data.success ? `突破成功，踏入「${data.cultivation?.title ?? '新境界'}」` : '突破失败，道心受挫')
+            setNotice(data.success ? `突破成功，踏入「${data.cultivation?.title ?? '新境界'}」` : '突破失败，损失当前修为的 1/3')
+            setCultivationPill('')
             await refreshMe()
           }
         } catch {
@@ -1607,8 +1610,7 @@ window.__ModuleLoader__.load({
         }
       }
 
-      const setCultivationSkill = async (skillId) => {
-        setBusy('cultivation-skill')
+      const setCultivationSkill = async (skillId) => {        setBusy('cultivation-skill')
         setError('')
         try {
           const data = await postJson('/cultivation/skill', { skillId })
@@ -1616,6 +1618,23 @@ window.__ModuleLoader__.load({
           else await refreshMe()
         } catch {
           setError('切换功法失败')
+        } finally {
+          setBusy('')
+        }
+      }
+
+      const craftPill = async (pillId) => {
+        setBusy('cultivation-alchemy')
+        setError('')
+        try {
+          const data = await postJson('/cultivation/alchemy', { skillId: pillId })
+          if (!data.ok) setError(data.message ?? '炼丹失败')
+          else {
+            setNotice(`炼成「${data.pill ?? '丹药'}」`)
+            await refreshMe()
+          }
+        } catch {
+          setError('炼丹失败')
         } finally {
           setBusy('')
         }
@@ -2579,6 +2598,12 @@ window.__ModuleLoader__.load({
         const history = path.history ?? []
         const areas = path.areas ?? []
         const skills = path.skills ?? []
+        const materials = path.materials ?? []
+        const pills = path.pills ?? []
+        const breakthroughMajor = Boolean(path.breakthroughMajor)
+        const selectedPill = pills.find((pill) => pill.code === cultivationPill) ?? null
+        const baseChance = Math.round((path.breakthroughChance ?? 0) * 1000) / 10
+        const activeChance = selectedPill ? selectedPill.chanceWithPill : baseChance
         const selectedArea = areas.find((area) => area.id === cultivationArea)
           ?? areas.find((area) => area.unlocked) ?? areas[0] ?? null
         const selectedAreaId = selectedArea?.id ?? ''
@@ -2604,16 +2629,25 @@ window.__ModuleLoader__.load({
         const harvestText = playback
           ? (playbackDone ? playback.harvestLog : '')
           : String(lastLog?.harvestLog ?? '')
+        const currentLoot = playback ? (playback.loot ?? []) : (lastLog?.loot ?? [])
+        const lootColor = (item) => item.rarity >= 4 ? '#ffb347'
+          : item.rarity === 3 ? '#c084fc'
+            : item.rarity === 2 ? '#60a5fa' : '#9ca3af'
         const logLine = (line, index) => h(
           'div',
           {
             key: index,
             style: {
               padding: '1px 0',
-              color: /装备|掉落/.test(line) ? COLORS.ok : COLORS.text,
-              fontWeight: /装备|掉落/.test(line) ? 700 : 400,
-              background: /装备|掉落/.test(line) ? DFY_BADGE_BG : 'transparent',
-              borderRadius: /装备|掉落/.test(line) ? 4 : 0,
+              color: /装备|掉落/.test(line)
+                ? (/传说/.test(line) ? '#ffb347'
+                  : /史诗/.test(line) ? '#c084fc'
+                    : /稀有/.test(line) ? '#60a5fa'
+                      : /普通/.test(line) ? '#9ca3af' : COLORS.ok)
+                : COLORS.text,
+              fontWeight: /装备|掉落|材料/.test(line) ? 700 : 400,
+              background: /装备|掉落|材料/.test(line) ? DFY_BADGE_BG : 'transparent',
+              borderRadius: /装备|掉落|材料/.test(line) ? 4 : 0,
             },
           },
           line,
@@ -2781,12 +2815,69 @@ window.__ModuleLoader__.load({
             ),
             h('span', { style: styles.meta }, path.skillName ?? ''),
           ),
+          h(
+            'div',
+            { style: { marginTop: 10, padding: '8px 10px', borderRadius: 8, border: `1px solid ${DFY_BORDER_SOFT}`, background: DFY_GHOST_BG } },
+            h('div', { style: { fontWeight: 700 } }, '材料与炼丹'),
+            h(
+              'div',
+              { style: { display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 5 } },
+              materials.filter((material) => (material.amount ?? 0) > 0).map((material) => h(
+                'span',
+                { key: material.code, style: { ...styles.meta, padding: '2px 6px', borderRadius: 999, background: DFY_BADGE_BG } },
+                `${material.icon ?? ''} ${material.name} ×${material.amount}`,
+              )),
+              materials.every((material) => (material.amount ?? 0) === 0)
+                ? h('span', { style: styles.hint }, '还没有材料，去秘境打怪掉落')
+                : null,
+            ),
+            h(
+              'div',
+              { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 6, marginTop: 8 } },
+              pills.map((pill) => h(
+                'div',
+                { key: pill.code, style: { border: `1px solid ${DFY_BORDER}`, borderRadius: 8, padding: '6px 8px' } },
+                h('div', { style: { fontWeight: 700 } }, `${pill.name} ×${pill.owned ?? 0}`),
+                h('div', { style: styles.meta }, `${pill.recipe} · 大境界 +${pill.bonus}%`),
+                h(
+                  'button',
+                  {
+                    style: { ...styles.btnGhost, marginTop: 4, padding: '4px 8px' },
+                    onClick: () => void craftPill(pill.code),
+                    disabled: busy === 'cultivation-alchemy' || !pill.craftable,
+                  },
+                  pill.craftable ? '炼丹' : '材料不足',
+                ),
+              )),
+            ),
+          ),
           path.breakthroughReady
             ? h(
                 'div',
                 { style: { marginTop: 10, padding: '8px 10px', borderRadius: 8, border: `1px solid ${COLORS.brand}`, background: DFY_BADGE_BG } },
                 h('div', { style: { fontWeight: 600 } }, `修为圆满，可冲击「${path.breakthroughTitle ?? '下一境界'}」`),
-                h('div', { style: { ...styles.meta, marginTop: 2 } }, `成功率 ${Math.round((path.breakthroughChance ?? 0) * 1000) / 10}% · 失败会损失部分修为`),
+                breakthroughMajor
+                  ? h(
+                      'div',
+                      { style: { marginTop: 4 } },
+                      h('div', { style: { ...styles.meta } }, '大境界突破：不服丹基础成功率仅 10%，可服一颗丹药提升，但最高 90%。'),
+                      h(
+                        'select',
+                        {
+                          style: { ...styles.select, width: '100%', marginTop: 4 },
+                          value: cultivationPill,
+                          onChange: (event) => setCultivationPill(event.target.value),
+                        },
+                        h('option', { value: '' }, `不服丹 · ${baseChance}%`),
+                        pills.filter((pill) => (pill.owned ?? 0) > 0).map((pill) => h(
+                          'option',
+                          { key: pill.code, value: pill.code },
+                          `${pill.name}（${pill.owned}颗）· ${pill.chanceWithPill}%`,
+                        )),
+                      ),
+                    )
+                  : h('div', { style: { ...styles.meta, marginTop: 2 } }, `小境界突破成功率 ${baseChance}% · 无需服丹`),
+                h('div', { style: { ...styles.meta, marginTop: 2 } }, `本次成功率 ${activeChance}% · 失败会损失当前修为的 1/3`),
                 h('button', {
                   style: { ...styles.btn, marginTop: 6 },
                   onClick: breakthroughCultivation,
@@ -2877,6 +2968,33 @@ window.__ModuleLoader__.load({
               )
             : null,
           logBlock,
+          currentLoot.length
+            ? h(
+                'div',
+                { style: { marginTop: 10, borderTop: `1px solid ${DFY_BORDER}`, paddingTop: 10 } },
+                h('div', { style: { fontWeight: 600, marginBottom: 4 } }, '🎁 本次掉落'),
+                h(
+                  'div',
+                  { style: { display: 'flex', flexWrap: 'wrap', gap: 6 } },
+                  currentLoot.map((item, index) => h(
+                    'span',
+                    {
+                      key: `${item.kind}-${item.code}-${index}`,
+                      style: {
+                        padding: '3px 8px',
+                        borderRadius: 999,
+                        border: `1px solid ${lootColor(item)}`,
+                        color: lootColor(item),
+                        background: DFY_BADGE_BG,
+                        fontWeight: 700,
+                        fontSize: 12,
+                      },
+                    },
+                    `${item.icon ?? ''} ${item.name}${item.kind === 'material' ? ` ×${item.amount}` : ` · ${item.rarityName}`}`,
+                  )),
+                ),
+              )
+            : null,
         )
       })()
 
@@ -4366,7 +4484,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.82.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.83.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
