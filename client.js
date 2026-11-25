@@ -861,6 +861,8 @@ window.__ModuleLoader__.load({
       const autoStartRef = useRef(undefined)
       const startCultivationRef = useRef(null)
       const seclusionReadyRef = useRef(false)
+      const battleLogRef = useRef(null)
+      const achievementSeenRef = useRef(null)
       const [cultivationPlayback, setCultivationPlayback] = useState(null)
       const [cultivationBoard, setCultivationBoard] = useState(null)
       const [cultivationScope, setCultivationScope] = useState('global')
@@ -1673,6 +1675,25 @@ window.__ModuleLoader__.load({
         seclusionReadyRef.current = ready
         return undefined
       }, [open, cultivationOpen, profile?.cultivation?.seclusion?.ready])
+
+      useEffect(() => {
+        const element = battleLogRef.current
+        if (element) element.scrollTop = element.scrollHeight
+      }, [cultivationPlayback?.elapsed, cultivationPlayback?.done])
+
+      useEffect(() => {
+        if (!open || !cultivationOpen) return
+        const unlocked = (profile?.cultivation?.achievements ?? []).filter((item) => item.unlocked)
+        if (achievementSeenRef.current === null) {
+          achievementSeenRef.current = new Set(unlocked.map((item) => item.code))
+          return
+        }
+        const fresh = unlocked.filter((item) => !achievementSeenRef.current.has(item.code))
+        if (fresh.length > 0) {
+          setNotice(`解锁修仙成就：${fresh.map((item) => item.title).join('、')}`)
+          achievementSeenRef.current = new Set(unlocked.map((item) => item.code))
+        }
+      }, [open, cultivationOpen, profile?.cultivation?.achievements])
 
       const breakthroughCultivation = async () => {
         if (cultivationPill && !breakthroughConfirm) {
@@ -2892,6 +2913,7 @@ window.__ModuleLoader__.load({
               h(
                 'div',
                 {
+                  ref: battleLogRef,
                   style: {
                     margin: 0,
                     padding: '8px 10px',
@@ -5015,7 +5037,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '1.6.2'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '1.7.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
