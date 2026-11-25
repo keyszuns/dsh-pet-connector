@@ -2877,7 +2877,7 @@ window.__ModuleLoader__.load({
               ),
               selectedArea
                 ? h('div', { style: { ...styles.meta, marginTop: 4 } },
-                    `${selectedArea.description} · 敌人：${(selectedArea.enemies ?? []).join('、')} · 收益 x${selectedArea.rewardMult} · 难度 ${selectedArea.difficulty ?? '—'} · 建议战力 ${selectedArea.recommendedPower ?? '—'}${selectedArea.cleared ? ` · 已通关 ×${selectedArea.clears}` : ' · 首通奖励待领取'}`)
+                    `${selectedArea.description} · 敌人：${(selectedArea.enemies ?? []).join('、')} · 五行 ${selectedArea.element ?? '无'}（${selectedArea.elementRelation ?? '无'}） · 收益 x${selectedArea.rewardMult} · 难度 ${selectedArea.difficulty ?? '—'} · 建议战力 ${selectedArea.recommendedPower ?? '—'}${selectedArea.cleared ? ` · 已通关 ×${selectedArea.clears}` : ' · 首通奖励待领取'}`)
                 : null,
               selectedArea && !selectedArea.unlocked
                 ? h('div', { style: { ...styles.hint, color: COLORS.err } }, `需要修炼到「${selectedArea.requiredTitle}」才能进入`)
@@ -4792,7 +4792,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.96.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.97.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
