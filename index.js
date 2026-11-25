@@ -672,7 +672,7 @@ class Connector {
         return this.sendJson(res, result.status, result.body)
       }
 
-      if (method === 'POST' && (path === '/cultivation/breakthrough' || path === '/cultivation/skill' || path === '/cultivation/alchemy')) {
+      if (method === 'POST' && (path === '/cultivation/breakthrough' || path === '/cultivation/skill' || path === '/cultivation/alchemy' || path === '/cultivation/achievements/claim')) {
         const body = await this.readJson(req)
         const result = await this.platformJson(`/v1/world${path}`, {
           method: 'POST',
