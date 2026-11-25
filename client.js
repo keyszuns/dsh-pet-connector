@@ -866,6 +866,7 @@ window.__ModuleLoader__.load({
       const [cultivationArea, setCultivationArea] = useState('')
       const [cultivationPill, setCultivationPill] = useState('')
       const [breakthroughConfirm, setBreakthroughConfirm] = useState(false)
+      const [seclusionConfirmHours, setSeclusionConfirmHours] = useState(0)
       const [coopInput, setCoopInput] = useState('')
       const [coopFriendQuery, setCoopFriendQuery] = useState('')
       const [coopFriendPick, setCoopFriendPick] = useState('')
@@ -1785,6 +1786,7 @@ window.__ModuleLoader__.load({
           const data = await postJson('/cultivation/seclusion/start', { hours })
           if (!data.ok) setError(data.message ?? '闭关失败')
           else {
+            setSeclusionConfirmHours(0)
             setNotice(`开始闭关 ${hours} 小时`)
             await refreshMe()
           }
@@ -3101,6 +3103,22 @@ window.__ModuleLoader__.load({
                       disabled: busy === 'cultivation-seclusion',
                     }, '出关领取'),
                   )
+                : seclusionConfirmHours > 0
+                ? h(
+                    'div',
+                    { style: { ...styles.row, marginTop: 4, gap: 5, flexWrap: 'wrap' } },
+                    h('span', { style: { ...styles.meta, color: COLORS.warn } },
+                      `确认闭关 ${seclusionConfirmHours} 小时？期间不能进入秘境，且不能取消。`),
+                    h('button', {
+                      style: { ...styles.btnGhost, padding: '3px 8px' },
+                      onClick: () => void startCultivationSeclusion(seclusionConfirmHours),
+                      disabled: busy === 'cultivation-seclusion',
+                    }, '确认闭关'),
+                    h('button', {
+                      style: { ...styles.btnGhost, padding: '3px 8px' },
+                      onClick: () => setSeclusionConfirmHours(0),
+                    }, '取消'),
+                  )
                 : h(
                     'div',
                     { style: { ...styles.row, marginTop: 4, gap: 5, flexWrap: 'wrap' } },
@@ -3108,7 +3126,7 @@ window.__ModuleLoader__.load({
                     [1, 2, 4, 8].map((hours) => h('button', {
                       key: hours,
                       style: { ...styles.btnGhost, padding: '3px 8px' },
-                      onClick: () => void startCultivationSeclusion(hours),
+                      onClick: () => setSeclusionConfirmHours(hours),
                       disabled: busy === 'cultivation-seclusion' || runInProgress || serverRunCooldown > 0,
                     }, `${hours} 小时`)),
                   ),
@@ -4984,7 +5002,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '1.4.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '1.5.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
