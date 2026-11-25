@@ -1750,6 +1750,29 @@ window.__ModuleLoader__.load({
         }
       }
 
+      const claimAllCultivationDaily = async (codes) => {
+        if (!codes?.length) return
+        setBusy('cultivation-daily')
+        setError('')
+        let claimed = 0
+        try {
+          for (const code of codes) {
+            const data = await postJson('/cultivation/daily/claim', { code })
+            if (!data.ok) {
+              setError(data.message ?? '部分每日任务领取失败')
+              break
+            }
+            claimed += 1
+          }
+          if (claimed > 0) setNotice(`已领取 ${claimed} 个每日修行奖励`)
+          await refreshMe()
+        } catch {
+          setError('部分每日任务领取失败')
+        } finally {
+          setBusy('')
+        }
+      }
+
       const claimAllCultivationAchievements = async (codes) => {
         if (!codes?.length) return
         setBusy('cultivation-achievement')
@@ -3025,7 +3048,20 @@ window.__ModuleLoader__.load({
             ? h(
                 'div',
                 { style: { marginTop: 8, padding: '6px 8px', borderRadius: 8, border: `1px solid ${DFY_BORDER_SOFT}`, background: DFY_GHOST_BG } },
-                h('div', { style: { fontWeight: 600, marginBottom: 3 } }, '📅 今日修行'),
+                h(
+                  'div',
+                  { style: { ...styles.row, marginBottom: 3 } },
+                  h('span', { style: { fontWeight: 600 } }, '📅 今日修行'),
+                  daily.some((task) => task.claimable)
+                    ? h('button', {
+                        style: { ...styles.btnGhost, padding: '2px 7px', marginLeft: 'auto' },
+                        onClick: () => void claimAllCultivationDaily(
+                          daily.filter((task) => task.claimable).map((task) => task.code),
+                        ),
+                        disabled: busy === 'cultivation-daily',
+                      }, '全部领取')
+                    : null,
+                ),
                 daily.map((task) => h(
                   'div',
                   { key: task.code, style: { ...styles.row, padding: '2px 0', gap: 6 } },
@@ -4870,7 +4906,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '1.2.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '1.3.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
