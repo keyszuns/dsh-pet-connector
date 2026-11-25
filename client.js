@@ -1700,14 +1700,30 @@ window.__ModuleLoader__.load({
         }
       }
 
-      const claimCultivationAchievement = async (code) => {
-        setBusy('cultivation-achievement')
+      const claimCultivationAchievement = async (code) => {        setBusy('cultivation-achievement')
         setError('')
         try {
           const data = await postJson('/cultivation/achievements/claim', { code })
           if (!data.ok) setError(data.message ?? '领取失败')
           else {
             setNotice('成就奖励已领取')
+            await refreshMe()
+          }
+        } catch {
+          setError('领取失败')
+        } finally {
+          setBusy('')
+        }
+      }
+
+      const claimCultivationDaily = async (code) => {
+        setBusy('cultivation-daily')
+        setError('')
+        try {
+          const data = await postJson('/cultivation/daily/claim', { code })
+          if (!data.ok) setError(data.message ?? '领取失败')
+          else {
+            setNotice('每日修行奖励已领取')
             await refreshMe()
           }
         } catch {
@@ -2702,6 +2718,7 @@ window.__ModuleLoader__.load({
         const pills = path.pills ?? []
         const achievements = path.achievements ?? []
         const bossGear = path.bossGear ?? []
+        const daily = path.daily ?? []
         const breakthroughMajor = Boolean(path.breakthroughMajor)
         const selectedPill = pills.find((pill) => pill.code === cultivationPill) ?? null
         const baseChance = Math.round((path.breakthroughChance ?? 0) * 1000) / 10
@@ -2973,6 +2990,28 @@ window.__ModuleLoader__.load({
             { style: { ...styles.meta, marginTop: 6 } },
             `今日：秘境 ${path.today?.runs ?? 0} 场 · 胜 ${path.today?.wins ?? 0} · 修为 +${path.today?.xp ?? 0} · 鱼饼 +${path.today?.coins ?? 0}`,
           ),
+          daily.length
+            ? h(
+                'div',
+                { style: { marginTop: 8, padding: '6px 8px', borderRadius: 8, border: `1px solid ${DFY_BORDER_SOFT}`, background: DFY_GHOST_BG } },
+                h('div', { style: { fontWeight: 600, marginBottom: 3 } }, '📅 今日修行'),
+                daily.map((task) => h(
+                  'div',
+                  { key: task.code, style: { ...styles.row, padding: '2px 0', gap: 6 } },
+                  h('span', { style: { flex: 1 } }, `${task.claimed ? '✓ ' : ''}${task.title}`),
+                  h('span', { style: styles.meta }, `${task.progress}/${task.target} · ${task.rewardCoins} 鱼饼`),
+                  task.claimed
+                    ? h('span', { style: { ...styles.meta, color: COLORS.ok } }, '已领取')
+                    : task.claimable
+                      ? h('button', {
+                          style: { ...styles.btnGhost, padding: '2px 7px' },
+                          onClick: () => void claimCultivationDaily(task.code),
+                          disabled: busy === 'cultivation-daily',
+                        }, '领取')
+                      : h('span', { style: styles.meta }, '未完成'),
+                )),
+              )
+            : null,
           logBlock,
           lootPanel,
         )
@@ -4796,7 +4835,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.99.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '1.0.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
