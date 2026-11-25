@@ -1,5 +1,8 @@
 # Big Fat Fish World Connector
 
+> **Don't just fish — you can also cultivate immortality!** Besides fishing, the dungeon and daily life, enter a separate text-cultivation realm: eight regions unlocked by realm, five-minute runs, manual breakthroughs, primary techniques, alchemy and breakthrough pills.
+
+
 English | [中文](DETAIL.zh.md)
 
 Connects your local **dsh-pet** to **Big Fat Fish World**. The connector does not modify dsh-pet or bundle its assets; it only uses dsh-pet's local HTTP extension surface (`/dsh-pet-7340/*`) to read state, write work status, and make the pet speak.
@@ -12,6 +15,7 @@ Connects your local **dsh-pet** to **Big Fat Fish World**. The connector does no
 - **Five elements**: birthday defines zodiac and nayin; city defines regional five-elements
 - **Shifts**: 15/30/60 minutes, server-authoritative settlement
 - **Dungeon**: solo/co-op, Lv10 unlock, daily limits and drops
+- **Cultivation realm**: independent cultivation level and title, eight realm-gated regions, five-minute timed logs, manual major-realm breakthroughs, primary techniques, alchemy, breakthrough pills, and a cultivation leaderboard
 - **Gear/shop**: buy, enhance, equip, dismantle, set bonuses, codex
 - **Three-tab panel**: My Fish / World / Bag
 - **Social**: friends, leaderboards, world chat, DMs, visits, co-op
