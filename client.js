@@ -852,6 +852,11 @@ window.__ModuleLoader__.load({
       const [coopFriends, setCoopFriends] = useState([])
       const [cultivationOpen, setCultivationOpen] = useState(false)
       const [cultivationTab, setCultivationTab] = useState('explore')
+      const [autoCultivation, setAutoCultivation] = useState(() => {
+        try { return localStorage.getItem('dfy.cultivation.auto') === '1' } catch { return false }
+      })
+      const autoStartRef = useRef(null)
+      const startCultivationRef = useRef(null)
       const [cultivationPlayback, setCultivationPlayback] = useState(null)
       const [cultivationBoard, setCultivationBoard] = useState(null)
       const [cultivationScope, setCultivationScope] = useState('global')
@@ -1608,6 +1613,29 @@ window.__ModuleLoader__.load({
           setBusy('')
         }
       }
+      startCultivationRef.current = startCultivation
+
+      const toggleAutoCultivation = () => {
+        const next = !autoCultivation
+        setAutoCultivation(next)
+        if (!next) autoStartRef.current = null
+        try { localStorage.setItem('dfy.cultivation.auto', next ? '1' : '0') } catch { /* ignore */ }
+      }
+
+      useEffect(() => {
+        if (!open || !cultivationOpen || !autoCultivation) return undefined
+        if (!cultivationPlayback?.done || busy) return undefined
+        if (autoStartRef.current === cultivationPlayback) return undefined
+        const path = profile?.cultivation
+        if (!path?.unlocked) return undefined
+        const cooldown = Math.max(0, path.runCooldownMs ?? 0)
+        const timer = setTimeout(() => {
+          autoStartRef.current = cultivationPlayback
+          void startCultivationRef.current?.()
+        }, Math.max(300, cooldown + 300))
+        return () => clearTimeout(timer)
+      }, [open, cultivationOpen, autoCultivation, cultivationPlayback, busy,
+        profile?.cultivation?.runCooldownMs, profile?.cultivation?.unlocked])
 
       const breakthroughCultivation = async () => {
         setBusy('cultivation-breakthrough')
@@ -1627,7 +1655,8 @@ window.__ModuleLoader__.load({
         }
       }
 
-      const setCultivationSkill = async (skillId) => {        setBusy('cultivation-skill')
+      const setCultivationSkill = async (skillId) => {
+        setBusy('cultivation-skill')
         setError('')
         try {
           const data = await postJson('/cultivation/skill', { skillId })
@@ -2860,6 +2889,19 @@ window.__ModuleLoader__.load({
           null,
           areaPanel,
           actionPanel,
+          h(
+            'label',
+            { style: { ...styles.row, marginTop: 8, gap: 6, cursor: 'pointer' } },
+            h('input', {
+              type: 'checkbox',
+              checked: autoCultivation,
+              onChange: toggleAutoCultivation,
+            }),
+            h('span', { style: { fontWeight: 600 } }, '挂机模式'),
+            h('span', { style: styles.meta }, autoCultivation
+              ? '本场日志结束后自动进入下一次秘境，关闭弹窗会停止'
+              : '开启后本场结束自动进入下一次，不需要反复点击'),
+          ),
           runLocked && !runInProgress && serverRunCooldown > 0
             ? h('div', { style: { ...styles.hint, color: COLORS.warn, marginTop: 6 } }, `秘境进行中，${cooldownSeconds} 秒后可再次进入。`)
             : null,
@@ -4576,7 +4618,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.88.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.89.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
