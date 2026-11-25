@@ -1083,6 +1083,25 @@ class Connector {
         return this.sendJson(res, result.status, result.body)
       }
 
+      if (method === 'DELETE' && path === '/messages/thread') {
+        const dfyId = url.searchParams.get('dfyId') ?? ''
+        const result = await this.platformJson(`/v1/world/messages/thread?dfyId=${encodeURIComponent(dfyId)}`, {
+          method: 'DELETE',
+          headers: { authorization: `Bearer ${this.token}` },
+        }).catch(() => null)
+        if (!result) return this.sendJson(res, 502, { ok: false, reason: 'platform-unreachable' })
+        return this.sendJson(res, result.status, result.body)
+      }
+
+      if (method === 'DELETE' && path === '/messages') {
+        const result = await this.platformJson('/v1/world/messages', {
+          method: 'DELETE',
+          headers: { authorization: `Bearer ${this.token}` },
+        }).catch(() => null)
+        if (!result) return this.sendJson(res, 502, { ok: false, reason: 'platform-unreachable' })
+        return this.sendJson(res, result.status, result.body)
+      }
+
       if (method === 'GET' && path === '/messages') {
         const result = await this.platformJson('/v1/world/messages', {
           headers: { authorization: `Bearer ${this.token}` },
