@@ -2915,8 +2915,7 @@ window.__ModuleLoader__.load({
           ? (playbackDone ? playback.harvestLog : '')
           : String(lastLog?.harvestLog ?? '')
         const currentLoot = playback ? (playback.loot ?? []) : (lastLog?.loot ?? [])
-        const lootColor = (item) => item.rarity >= 4 ? '#ffb347'
-          : item.rarity === 3 ? '#c084fc'
+        const lootColor = (item) => item.rarity >= 4 ? '#ffb347'          : item.rarity === 3 ? '#c084fc'
             : item.rarity === 2 ? '#60a5fa' : '#9ca3af'
         const logLine = (line, index) => h(
           'div',
@@ -2937,6 +2936,16 @@ window.__ModuleLoader__.load({
           },
           line,
         )
+        const copyLogText = () => {
+          const segments = playback ? (playback.segments ?? []) : (lastLog?.segments ?? [])
+          const text = [
+            ...segments,
+            ...(harvestText ? ['', '🌾 收获日志', harvestText] : []),
+            ...(lastLog?.opportunity ? ['', '☯ 机缘：' + lastLog.opportunity] : []),
+          ].join('\n')
+          void copyText(text, '本次秘境日志')
+        }
+
         const logBlock = (playback || lastLog)
           ? h(
               'div',
@@ -2948,6 +2957,10 @@ window.__ModuleLoader__.load({
                 playback
                   ? h('span', { style: styles.meta }, `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')} / 5:00 · 每 5 秒推进`)
                   : h('span', { style: styles.meta }, '最近一次修行'),
+                h('button', {
+                  style: { ...styles.btnGhost, padding: '2px 7px', marginLeft: 'auto' },
+                  onClick: () => void copyLogText(),
+                }, '复制日志'),
               ),
               playback
                 ? h(
@@ -5134,7 +5147,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '1.9.1'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '1.9.2'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
