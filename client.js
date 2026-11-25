@@ -860,6 +860,7 @@ window.__ModuleLoader__.load({
       })
       const autoStartRef = useRef(undefined)
       const startCultivationRef = useRef(null)
+      const seclusionReadyRef = useRef(false)
       const [cultivationPlayback, setCultivationPlayback] = useState(null)
       const [cultivationBoard, setCultivationBoard] = useState(null)
       const [cultivationScope, setCultivationScope] = useState('global')
@@ -1662,6 +1663,16 @@ window.__ModuleLoader__.load({
       }, [open, cultivationOpen, autoCultivation, autoSafeArea, cultivationPlayback, busy,
         profile?.cultivation?.runCooldownMs, profile?.cultivation?.unlocked, profile?.cultivation?.areas,
         profile?.cultivation?.seclusion?.active, profile?.cultivation?.seclusion?.ready])
+
+      useEffect(() => {
+        if (!open || !cultivationOpen) return undefined
+        const ready = Boolean(profile?.cultivation?.seclusion?.ready)
+        if (ready && !seclusionReadyRef.current) {
+          setNotice('闭关结束，可以出关领取修为了')
+        }
+        seclusionReadyRef.current = ready
+        return undefined
+      }, [open, cultivationOpen, profile?.cultivation?.seclusion?.ready])
 
       const breakthroughCultivation = async () => {
         if (cultivationPill && !breakthroughConfirm) {
@@ -5002,7 +5013,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '1.5.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '1.5.1'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
