@@ -2714,6 +2714,7 @@ window.__ModuleLoader__.load({
         const history = path.history ?? []
         const areas = path.areas ?? []
         const skills = path.skills ?? []
+        const selectedSkillInfo = skills.find((skill) => skill.id === path.skillId) ?? null
         const materials = path.materials ?? []
         const pills = path.pills ?? []
         const achievements = path.achievements ?? []
@@ -3056,10 +3057,14 @@ window.__ModuleLoader__.load({
                 key: skill.id,
                 value: skill.id,
                 disabled: !skill.unlocked,
-              }, `${skill.name} · ${skill.effect === 'heal' ? '治疗' : skill.effect === 'shield' ? '护盾' : '攻击'}${skill.unlocked ? '' : `（需 ${skill.requiredTitle}）`}`)),
+              }, `${skill.name} · ${skill.effect === 'heal' ? '治疗' : skill.effect === 'shield' ? '护盾' : '攻击'}${skill.unlocked ? '' : `（需 ${skill.requiredTitle}）`}${skill.masteryLevel > 0 ? ` · Lv.${skill.masteryLevel}` : ''}`)),
             ),
             h('span', { style: styles.meta }, path.skillName ?? ''),
           ),
+          selectedSkillInfo
+            ? h('div', { style: { ...styles.meta, marginTop: 4 } },
+                `熟练度 Lv.${selectedSkillInfo.masteryLevel} · 威力 +${selectedSkillInfo.masteryBonus ?? 0}% · 已使用 ${selectedSkillInfo.uses ?? 0} 次`)
+            : null,
           path.breakthroughReady
             ? h(
                 'div',
@@ -4835,7 +4840,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '1.0.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '1.1.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
