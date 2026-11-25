@@ -2329,7 +2329,7 @@ window.__ModuleLoader__.load({
         setBusy('bio')
         setError('')
         try {
-          const data = await postJson('/pet/bio', { bio: bioInput.trim() })
+          const data = await postJson('/pet/bio', { text: bioInput.trim() })
           if (!data.ok) setError(data.message ?? '签名保存失败')
           else {
             setBioEditing(false)
@@ -2348,7 +2348,7 @@ window.__ModuleLoader__.load({
         setBusy('rename')
         setError('')
         try {
-          const data = await postJson('/pet/rename', { name })
+          const data = await postJson('/pet/rename', { text: name })
           if (!data.ok) setError(data.message ?? '改名失败')
           else {
             setRenameName('')
@@ -4484,7 +4484,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.84.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.85.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
