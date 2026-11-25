@@ -862,6 +862,7 @@ window.__ModuleLoader__.load({
       const [cultivationScope, setCultivationScope] = useState('global')
       const [cultivationArea, setCultivationArea] = useState('')
       const [cultivationPill, setCultivationPill] = useState('')
+      const [breakthroughConfirm, setBreakthroughConfirm] = useState(false)
       const [coopInput, setCoopInput] = useState('')
       const [coopFriendQuery, setCoopFriendQuery] = useState('')
       const [coopFriendPick, setCoopFriendPick] = useState('')
@@ -1639,6 +1640,12 @@ window.__ModuleLoader__.load({
         profile?.cultivation?.runCooldownMs, profile?.cultivation?.unlocked])
 
       const breakthroughCultivation = async () => {
+        if (cultivationPill && !breakthroughConfirm) {
+          setBreakthroughConfirm(true)
+          setError('')
+          setNotice('再次点击确认服用丹药并突破')
+          return
+        }
         setBusy('cultivation-breakthrough')
         setError('')
         try {
@@ -1647,6 +1654,7 @@ window.__ModuleLoader__.load({
           else {
             setNotice(data.success ? `突破成功，踏入「${data.cultivation?.title ?? '新境界'}」` : '突破失败，损失当前修为的 1/3')
             setCultivationPill('')
+            setBreakthroughConfirm(false)
             await refreshMe()
           }
         } catch {
@@ -2972,7 +2980,10 @@ window.__ModuleLoader__.load({
                         {
                           style: { ...styles.select, width: '100%', marginTop: 4 },
                           value: cultivationPill,
-                          onChange: (event) => setCultivationPill(event.target.value),
+                          onChange: (event) => {
+                            setCultivationPill(event.target.value)
+                            setBreakthroughConfirm(false)
+                          },
                         },
                         h('option', { value: '' }, `不服丹 · ${baseChance}%`),
                         pills.filter((pill) => (pill.owned ?? 0) > 0).map((pill) => h(
@@ -2988,7 +2999,8 @@ window.__ModuleLoader__.load({
                   style: { ...styles.btn, marginTop: 6 },
                   onClick: breakthroughCultivation,
                   disabled: busy === 'cultivation-breakthrough',
-                }, busy === 'cultivation-breakthrough' ? '冲击中…' : '冲击境界'),
+                }, busy === 'cultivation-breakthrough' ? '冲击中…'
+                  : selectedPill && !breakthroughConfirm ? `确认服用「${selectedPill.name}」并突破` : '冲击境界'),
               )
             : h('div', { style: { ...styles.hint, marginTop: 10 } }, '修为未满，继续在秘境积累后可冲击境界。'),
         )
@@ -4622,7 +4634,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.90.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.91.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
