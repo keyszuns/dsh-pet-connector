@@ -846,6 +846,13 @@ class Connector {
         return this.sendJson(res, result.status, result.body)
       }
 
+      if (method === 'GET' && path === '/leaderboards') {
+        const headers = this.token ? { authorization: `Bearer ${this.token}` } : {}
+        const result = await this.platformJson(`/v1/world/leaderboards${url.search}`, { headers }).catch(() => null)
+        if (!result) return this.sendJson(res, 502, { ok: false, reason: 'platform-unreachable' })
+        return this.sendJson(res, result.status, result.body)
+      }
+
       if (method === 'GET' && path === '/rankings') {
         const headers = this.token ? { authorization: `Bearer ${this.token}` } : {}
         const result = await this.platformJson(`/v1/world/rankings${url.search}`, { headers }).catch(() => null)
