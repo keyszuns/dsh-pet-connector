@@ -3145,7 +3145,7 @@ window.__ModuleLoader__.load({
                         opacity: item.owned > 0 ? 1 : 0.45,
                       },
                     },
-                    `${item.icon ?? ''} ${item.name}${item.owned > 0 ? ` ×${item.owned}` : ' · 未获得'}`,
+                    `${item.icon ?? ''} ${item.areaName ? item.areaName + '·' : ''}${item.name}${item.owned > 0 ? ` ×${item.owned}` : ' · 未获得'}`,
                   )),
                 ),
               )
@@ -3170,7 +3170,7 @@ window.__ModuleLoader__.load({
                     'div',
                     { style: { flex: 1 } },
                     h('div', { style: { fontWeight: 600 } }, `${achievement.unlocked ? '✓ ' : '🔒 '}${achievement.title}`),
-                    h('div', { style: styles.meta }, `${achievement.description} · 奖励 ${achievement.rewardCoins} 鱼饼`),
+                    h('div', { style: styles.meta }, `${achievement.description} · 进度 ${achievement.progress ?? '—'} · 奖励 ${achievement.rewardCoins} 鱼饼`),
                   ),
                   achievement.claimed
                     ? h('span', { style: { ...styles.meta, color: COLORS.ok } }, '已领取')
@@ -3223,6 +3223,20 @@ window.__ModuleLoader__.load({
             'div',
             { style: { height: 6, borderRadius: 999, background: DFY_TRACK_BG, overflow: 'hidden', marginTop: 6 } },
             h('div', { style: { width: `${Math.round(cultivationProgress * 100)}%`, height: '100%', background: COLORS.brand } }),
+          ),
+          h(
+            'div',
+            { style: { ...styles.row, marginTop: 4, gap: 6 } },
+            h('span', {
+              style: {
+                ...styles.meta,
+                color: runInProgress ? COLORS.brand : serverRunCooldown > 0 ? COLORS.warn : COLORS.ok,
+                fontWeight: 600,
+              },
+            }, runInProgress
+              ? `秘境进行中 ${Math.floor((cultivationPlayback?.elapsed ?? 0) / 60)}:${String((cultivationPlayback?.elapsed ?? 0) % 60).padStart(2, '0')} / 5:00`
+              : serverRunCooldown > 0 ? `秘境冷却 ${cooldownSeconds}s` : '秘境就绪'),
+            autoCultivation ? h('span', { style: { ...styles.meta, color: COLORS.brand } }, '· 挂机模式') : null,
           ),
           tabBar,
           tabContent,
@@ -4715,7 +4729,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.93.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.94.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
