@@ -1772,6 +1772,23 @@ window.__ModuleLoader__.load({
         }
       }
 
+      const buyCultivationMaterial = async (code, count) => {
+        setBusy('cultivation-shop')
+        setError('')
+        try {
+          const data = await postJson('/cultivation/shop/buy', { code, count })
+          if (!data.ok) setError(data.message ?? '购买失败')
+          else {
+            setNotice(`购买成功：${count} 份材料`)
+            await refreshMe()
+          }
+        } catch {
+          setError('购买失败')
+        } finally {
+          setBusy('')
+        }
+      }
+
       const claimCultivationAchievement = async (code) => {        setBusy('cultivation-achievement')
         setError('')
         try {
@@ -3345,6 +3362,33 @@ window.__ModuleLoader__.load({
               ? h('span', { style: styles.hint }, '还没有材料，去秘境打怪掉落')
               : null,
           ),
+          (path.shop ?? []).length
+            ? h(
+                'div',
+                { style: { marginTop: 8, borderTop: `1px dashed ${DFY_BORDER}`, paddingTop: 6 } },
+                h('div', { style: { fontWeight: 600 } },
+                  `🏪 修仙坊市 · 鱼饼 ${profile?.coins ?? 0}`),
+                h(
+                  'div',
+                  { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 5, marginTop: 4 } },
+                  (path.shop ?? []).map((item) => h(
+                    'div',
+                    { key: item.code, style: { ...styles.row, padding: '3px 6px', borderRadius: 6, border: `1px solid ${DFY_BORDER_SOFT}`, gap: 5 } },
+                    h('span', { style: { flex: 1 } }, `${item.icon ?? ''} ${item.name} · ${item.price} 鱼饼`),
+                    h('button', {
+                      style: { ...styles.btnGhost, padding: '2px 6px' },
+                      onClick: () => void buyCultivationMaterial(item.code, 1),
+                      disabled: busy === 'cultivation-shop' || (profile?.coins ?? 0) < item.price,
+                    }, '买1'),
+                    h('button', {
+                      style: { ...styles.btnGhost, padding: '2px 6px' },
+                      onClick: () => void buyCultivationMaterial(item.code, 5),
+                      disabled: busy === 'cultivation-shop' || (profile?.coins ?? 0) < item.price * 5,
+                    }, '买5'),
+                  )),
+                ),
+              )
+            : null,
           h(
             'div',
             { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 6, marginTop: 8 } },
@@ -5077,7 +5121,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '1.8.3'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '1.9.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
