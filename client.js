@@ -2673,6 +2673,7 @@ window.__ModuleLoader__.load({
         const materials = path.materials ?? []
         const pills = path.pills ?? []
         const achievements = path.achievements ?? []
+        const bossGear = path.bossGear ?? []
         const breakthroughMajor = Boolean(path.breakthroughMajor)
         const selectedPill = pills.find((pill) => pill.code === cultivationPill) ?? null
         const baseChance = Math.round((path.breakthroughChance ?? 0) * 1000) / 10
@@ -2848,7 +2849,7 @@ window.__ModuleLoader__.load({
               ),
               selectedArea
                 ? h('div', { style: { ...styles.meta, marginTop: 4 } },
-                    `${selectedArea.description} · 敌人：${(selectedArea.enemies ?? []).join('、')} · 收益 x${selectedArea.rewardMult}${selectedArea.cleared ? ` · 已通关 ×${selectedArea.clears}` : ' · 首通奖励待领取'}`)
+                    `${selectedArea.description} · 敌人：${(selectedArea.enemies ?? []).join('、')} · 收益 x${selectedArea.rewardMult} · 难度 ${selectedArea.difficulty ?? '—'} · 建议战力 ${selectedArea.recommendedPower ?? '—'}${selectedArea.cleared ? ` · 已通关 ×${selectedArea.clears}` : ' · 首通奖励待领取'}`)
                 : null,
               selectedArea && !selectedArea.unlocked
                 ? h('div', { style: { ...styles.hint, color: COLORS.err } }, `需要修炼到「${selectedArea.requiredTitle}」才能进入`)
@@ -3117,6 +3118,34 @@ window.__ModuleLoader__.load({
                     h('span', { style: styles.meta }, `#${entry.id}`),
                     h('span', { style: { flex: 1 } }, `${entry.outcome === 'victory' ? '胜' : '败'} · ${entry.enemy}`),
                     h('span', { style: styles.meta }, `修为 +${entry.xp ?? 0} · 鱼饼 +${entry.coins ?? 0}`),
+                  )),
+                ),
+              )
+            : null,
+          bossGear.length
+            ? h(
+                'div',
+                { style: { marginTop: 10, borderTop: `1px solid ${DFY_BORDER}`, paddingTop: 10 } },
+                h('div', { style: { fontWeight: 600, marginBottom: 4 } }, '🗡 Boss 装备图鉴'),
+                h(
+                  'div',
+                  { style: { display: 'flex', flexWrap: 'wrap', gap: 5 } },
+                  bossGear.map((item) => h(
+                    'span',
+                    {
+                      key: item.code,
+                      title: item.owned > 0 ? `已获得 ×${item.owned}` : '尚未获得',
+                      style: {
+                        padding: '3px 7px',
+                        borderRadius: 999,
+                        fontSize: 12,
+                        border: `1px solid ${lootColor(item)}`,
+                        color: lootColor(item),
+                        background: DFY_BADGE_BG,
+                        opacity: item.owned > 0 ? 1 : 0.45,
+                      },
+                    },
+                    `${item.icon ?? ''} ${item.name}${item.owned > 0 ? ` ×${item.owned}` : ' · 未获得'}`,
                   )),
                 ),
               )
@@ -4686,7 +4715,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.92.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.93.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
