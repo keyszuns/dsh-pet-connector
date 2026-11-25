@@ -33,10 +33,10 @@ window.__ModuleLoader__.load({
       '鱼潮': 'Fish Tide',
       '下一次': 'Next',
       '每天 12:00 与 20:00 各 15 分钟。': 'Daily 15-minute tides at 12:00 and 20:00.',
-      '限时加成，摸鱼/鱼本/下楼溜达都生效。': 'Limited-time bonus: affects work, dungeon and stroll.',
+      '限时加成，摸鱼/修仙/下楼溜达都生效。': 'Limited-time bonus: affects work, dungeon and stroll.',
       '去摸鱼': 'Go Work',
-      '今日鱼本': 'Dungeon',
-      '组队鱼本': 'Co-op Dungeon',
+      '今日鱼本': 'Cultivation',
+      '组队鱼本': 'Cultivation Party',
       '下楼溜达': 'Stroll',
       '上次摸鱼': 'Last Shift',
       '结伴摸鱼': 'Co-op Work',
@@ -139,7 +139,7 @@ window.__ModuleLoader__.load({
       '只能和好友结伴；每天同一好友最多 3 次加成。': 'Co-op only with friends; max 3 bonus runs per friend per day.',
       '结伴收益会按双方属相（六合/三合/六冲）与八字（月柱/日柱）合冲浮动：相合有加成，相冲会减成；组队后显示具体修正。': 'Co-op rewards vary with zodiac and birth-chart compatibility: harmony adds bonus, clashes reduce it.',
       '基础 鱼饼 +20% · 经验 +10% · 属相/八字合冲浮动': 'Base +20% Fishcoins · +10% XP · zodiac/birth-chart bonus or penalty',
-      '每天抽一次；吉签当天鱼饼/经验有加成，凶签会减成（影响摸鱼、鱼本、下楼溜达）。': 'One draw per day. Good fortunes boost today\'s earnings; bad fortunes reduce them.',
+      '每天抽一次；吉签当天鱼饼/经验有加成，凶签会减成（影响摸鱼、修仙、下楼溜达）。': 'One draw per day. Good fortunes boost today\'s earnings; bad fortunes reduce them.',
       '随机去一座城市，带回鱼饼、经验和一件见闻。': 'Visit a random city and bring back Fishcoins, XP and a story.',
       '协议、城市、生日都在网页完成；不获取定位。': 'Consent, region and birthday are completed on the web; no location access.',
       '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录': 'Right-click pet → "Open Big Fat Fish World" · Away keeps you logged in',
@@ -1515,6 +1515,43 @@ window.__ModuleLoader__.load({
         }
       }
 
+      const startCultivation = async () => {
+        setBusy('cultivation')
+        setError('')
+        try {
+          const data = await postJson('/cultivation/start', {})
+          if (!data.ok) setError(data.message ?? '修仙失败')
+          else {
+            const outcome = data.log?.outcome === 'victory' ? '秘境已清光' : '道心受挫，且回去再练'
+            setNotice(`修仙归来：${outcome}`)
+            await refreshMe()
+          }
+        } catch {
+          setError('修仙失败')
+        } finally {
+          setBusy('')
+        }
+      }
+
+      const createCultivationCoop = async () => {
+        setBusy('cultivation-coop')
+        setError('')
+        try {
+          const data = await postJson('/coop/create', { jobId: 'cultivation', minutes: 30 })
+          if (!data.ok) setError(data.message ?? '创建修仙队伍失败')
+          else {
+            setCoopRoom(data.coop ?? null)
+            setCoopCode(data.code ?? data.coop?.code ?? '')
+            await refreshFriends()
+            setNotice('修仙队伍已创建，等道友准备')
+          }
+        } catch {
+          setError('创建修仙队伍失败')
+        } finally {
+          setBusy('')
+        }
+      }
+
       const startDungeon = async () => {
         setBusy('dungeon')
         setError('')
@@ -2382,9 +2419,9 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.row },
-            h('span', { style: { fontWeight: 600 } }, '结伴摸鱼'),
+            h('span', { style: { fontWeight: 600 } }, room.jobId === 'cultivation' ? '修仙队伍' : '结伴摸鱼'),
             h('span', { style: styles.badge }, roomStatusText),
-            h('span', { style: styles.meta }, `${room.code} · ${room.jobName} · ${room.minutes} 分钟 · ${room.memberCount}/${room.maxMembers}`),
+            h('span', { style: styles.meta }, `${room.code} · ${room.jobName} · ${room.jobId === 'cultivation' ? '即时战斗' : `${room.minutes} 分钟`} · ${room.memberCount}/${room.maxMembers}`),
           ),
           h('div', { style: { ...styles.row, marginTop: 8 } }, roomMembers),
           roomCompat,
@@ -2429,6 +2466,111 @@ window.__ModuleLoader__.load({
         )
       })()
 
+      const cultivationCard = (() => {
+        const path = me?.cultivation
+        if (!path) return null
+        const stats = path.stats ?? {}
+        const lastLog = path.lastLog
+        const statBox = (label, value) => h(
+          'div',
+          { style: { border: `1px solid ${DFY_BORDER}`, borderRadius: 8, padding: '6px 8px', textAlign: 'center' } },
+          h('div', { style: { ...styles.meta, fontSize: 11 } }, label),
+          h('div', { style: { fontWeight: 700, fontFamily: 'Consolas, "Courier New", monospace' } }, value),
+        )
+        const logBlock = lastLog
+          ? h(
+              'div',
+              { style: { marginTop: 10, borderTop: `1px solid ${DFY_BORDER}`, paddingTop: 10 } },
+              h('div', { style: { fontWeight: 600, marginBottom: 4 } }, '⚔ 战斗日志'),
+              h('pre', {
+                style: {
+                  margin: 0,
+                  padding: '8px 10px',
+                  borderRadius: 8,
+                  background: DFY_GHOST_BG,
+                  border: `1px solid ${DFY_BORDER_SOFT}`,
+                  maxHeight: 230,
+                  overflow: 'auto',
+                  whiteSpace: 'pre-wrap',
+                  fontFamily: 'Consolas, "Courier New", monospace',
+                  fontSize: 12,
+                  lineHeight: 1.7,
+                  color: COLORS.text,
+                },
+              }, String(lastLog.battleLog ?? '')),
+              h('div', { style: { fontWeight: 600, margin: '8px 0 4px' } }, '🌾 收获日志'),
+              h('pre', {
+                style: {
+                  margin: 0,
+                  padding: '8px 10px',
+                  borderRadius: 8,
+                  background: DFY_GHOST_BG,
+                  border: `1px solid ${DFY_BORDER_SOFT}`,
+                  whiteSpace: 'pre-wrap',
+                  fontFamily: 'Consolas, "Courier New", monospace',
+                  fontSize: 12,
+                  lineHeight: 1.7,
+                  color: COLORS.text,
+                },
+              }, String(lastLog.harvestLog ?? '')),
+              h('div', { style: { fontWeight: 600, margin: '8px 0 4px' } }, '☯ 机缘'),
+              h('div', { style: styles.hint }, String(lastLog.opportunity ?? '寻常无事')),
+            )
+          : h('div', { style: { ...styles.hint, marginTop: 8 } }, '还没有修行记录。入秘境走一遭，回来看看自己的战报。')
+        return h(
+          'div',
+          {
+            style: {
+              ...styles.card,
+              border: `1px solid ${DFY_BORDER}`,
+              background: `linear-gradient(180deg, ${DFY_CARD_BG}, ${COLORS.layer1})`,
+              fontFamily: 'ui-serif, "Songti SC", "Noto Serif CJK SC", serif',
+            },
+          },
+          h(
+            'div',
+            { style: styles.row },
+            h('div', null,
+              h('div', { style: { fontWeight: 700, letterSpacing: 1 } }, '我不上班儿了，我要去修仙！'),
+              h('div', { style: styles.meta }, `Lv.${path.unlockLevel} 解锁 · 今日修行 ${path.used}/${path.limit} 次 · 战斗后立即结算`),
+            ),
+            h('span', { style: { ...styles.badge, background: DFY_BADGE_BG } }, lastLog?.outcome === 'victory' ? '最近：胜' : lastLog ? '最近：败' : '境界：炼气'),
+          ),
+          h(
+            'div',
+            { style: { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 6, marginTop: 10 } },
+            statBox('气血', stats.hp ?? 0),
+            statBox('攻击', stats.attack ?? 0),
+            statBox('防御', stats.defense ?? 0),
+            statBox('身法', stats.speed ?? 0),
+            statBox('会心', `${stats.crit ?? 0}%`),
+            statBox('幸运', stats.luck ?? 0),
+          ),
+          h(
+            'div',
+            { style: { ...styles.row, marginTop: 10, flexWrap: 'wrap' } },
+            h('button', {
+              style: styles.btn,
+              onClick: startCultivation,
+              disabled: busy === 'cultivation' || !path.unlocked || path.used >= path.limit,
+            }, !path.unlocked ? `Lv.${path.unlockLevel} 解锁` : path.used >= path.limit ? '今日修行已尽' : '独自入秘境'),
+            h('button', {
+              style: styles.btnGhost,
+              onClick: createCultivationCoop,
+              disabled: busy === 'cultivation-coop' || !path.unlocked,
+            }, '组队修仙'),
+            coopRoom?.jobId === 'cultivation'
+              ? h('span', { style: styles.meta }, `队伍 ${coopRoom.code} · ${coopRoom.status === 'waiting' ? '等准备' : '战斗中'}`)
+              : null,
+          ),
+          h('div', { style: styles.hint }, '装备的攻/防/血/速会直接参与战斗；队伍相性相合会加成收益，相冲会减成。'),
+          coopRoom?.jobId === 'cultivation'
+            ? h('div', { style: { ...styles.hint, marginTop: 6 } }, '组队房间在下方「结伴摸鱼」卡片中，全员准备后由房主开始。')
+            : null,
+          logBlock,
+        )
+      })()
+
       const meTab = h(
         'div',
         null,
@@ -2450,7 +2592,7 @@ window.__ModuleLoader__.load({
                       : '',
                 ),
               ),
-              h('div', { style: styles.hint }, me.tide.active ? '限时加成，摸鱼/鱼本/下楼溜达都生效。' : '每天 12:00 与 20:00 各 15 分钟。'),
+              h('div', { style: styles.hint }, me.tide.active ? '限时加成，摸鱼/修仙/下楼溜达都生效。' : '每天 12:00 与 20:00 各 15 分钟。'),
             )
           : null,
         checkin
@@ -2553,7 +2695,7 @@ window.__ModuleLoader__.load({
                     : `今日加成：鱼饼 +${Math.round(((fortune.fortune?.coinMult ?? 1) - 1) * 100)}%、经验 +${Math.round(((fortune.fortune?.xpMult ?? 1) - 1) * 100)}%`,
                 ),
               )
-            : h('div', { style: styles.hint }, '每天抽一次；吉签当天鱼饼/经验有加成，凶签会减成（影响摸鱼、鱼本、下楼溜达）。'),
+            : h('div', { style: styles.hint }, '每天抽一次；吉签当天鱼饼/经验有加成，凶签会减成（影响摸鱼、修仙、下楼溜达）。'),
         ),
         h(
           'div',
@@ -2683,67 +2825,7 @@ window.__ModuleLoader__.load({
               ),
               h('div', { style: styles.hint }, '收益由服务端结算：经验按 4/分钟、鱼饼按 1.5/分钟，再乘岗位与五行系数。'),
             ),
-        me?.dungeon
-          ? h(
-              'div',
-              { style: styles.card },
-              h(
-                'div',
-                { style: styles.row },
-                h(
-                  'div',
-                  null,
-                  h('div', { style: { fontWeight: 600 } }, '今日鱼本'),
-                  h('div', { style: styles.meta }, `${me.dungeon.used}/${me.dungeon.limit} 次 · 30 分钟 · 幸运 ${Math.round(me.luck)}`),
-                ),
-                me.dungeon.unlocked
-                  ? h(
-                      'button',
-                      {
-                        style: styles.btn,
-                        onClick: startDungeon,
-                        disabled: busy === 'dungeon' || me.dungeon.used >= me.dungeon.limit || Boolean(shift),
-                      },
-                      me.dungeon.used >= me.dungeon.limit ? '次数用完' : '去鱼本',
-                    )
-                  : h('span', { style: styles.meta }, me.dungeon.levelOk ? '注册满 72 小时解锁' : 'Lv.10 解锁'),
-              ),
-              h('div', { style: styles.hint }, '每次通关必得 1 件装备（每天 2 件）；装备只加幸运，打鱼本时鱼饼更多。组队鱼本还会按双方属相/八字合冲浮动收益。'),
-              me.dungeon.unlocked
-                ? h(
-                    'div',
-                    null,
-                    shift?.coop && shift.kind === 'dungeon'
-                      ? h(
-                          'div',
-                          null,
-                          h('div', { style: styles.hint }, `组队鱼本进行中${dungeonCoopCode ? ` · 队伍码 ${dungeonCoopCode}` : ''}，鱼饼 +20% · 经验 +10%。`),
-                          renderCompatLine(shift.compat),
-                        )
-                      : h(
-                          'div',
-                          { style: { ...styles.row, marginTop: 8 } },
-                          h('button', { style: styles.btnGhost, onClick: createDungeonCoop, disabled: busy === 'dungeon-coop' || Boolean(shift) }, '组队鱼本'),
-                          h(
-                            'input',
-                            {
-                              style: { ...styles.select, flex: 1, minWidth: 110 },
-                              placeholder: '好友的队伍码',
-                              maxLength: 6,
-                              value: dungeonCoopInput,
-                              onChange: (event) => setDungeonCoopInput(event.target.value.toUpperCase()),
-                              onKeyDown: (event) => {
-                                if (event.key === 'Enter') void joinDungeonCoop()
-                              },
-                            },
-                          ),
-                          h('button', { style: styles.btnGhost, onClick: joinDungeonCoop, disabled: busy === 'dungeon-coop-join' || Boolean(shift) }, '加入'),
-                        ),
-                    dungeonCoopCode ? h('div', { style: styles.hint }, `队伍码：${dungeonCoopCode}（发给好友，双方一起下本）`) : null,
-                  )
-                : null,
-            )
-          : null,
+        cultivationCard,
         me?.explore
           ? h(
               'div',
@@ -3618,7 +3700,7 @@ window.__ModuleLoader__.load({
           { style: styles.card },
           h('div', { style: { fontWeight: 600, marginBottom: 6 } }, `背包（${inventory.length}）`),
           inventory.length === 0
-            ? h('div', { style: styles.hint }, '还没有装备。10 级后打鱼本，每次通关必得 1 件。')
+            ? h('div', { style: styles.hint }, '还没有装备。Lv.5 后去修仙，每次秘境通关必得 1 件。')
             : inventory.map((item) =>
                 h(
                   'div',
@@ -3630,7 +3712,7 @@ window.__ModuleLoader__.load({
                       'div',
                       null,
                       h('div', null, `${item.icon} ${item.name}`, h('span', { style: styles.badge }, `${item.rarityName}`)),
-                      h('div', { style: styles.meta }, `+${item.luck} 幸运${item.enhance ? ` · 强化 +${item.enhance}` : ''}${item.equipped ? ' · 已装备' : ''}`),
+                      h('div', { style: styles.meta }, `+${item.luck} 幸运 · 攻 +${item.combat?.attack ?? 0} 防 +${item.combat?.defense ?? 0} 血 +${item.combat?.hp ?? 0} 速 +${item.combat?.speed ?? 0}${item.enhance ? ` · 强化 +${item.enhance}` : ''}${item.equipped ? ' · 已装备' : ''}`),
                     ),
                     h(
                       'div',
@@ -3709,7 +3791,7 @@ window.__ModuleLoader__.load({
                     key: item.code,
                     style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 0', borderBottom: `1px solid ${DFY_BORDER}` },
                   },
-                  h('div', null, `${item.icon} ${item.name}`, h('span', { style: styles.badge }, item.rarityName), h('div', { style: styles.meta }, `${item.slotName} · 幸运 +${item.luck}`)),
+                  h('div', null, `${item.icon} ${item.name}`, h('span', { style: styles.badge }, item.rarityName), h('div', { style: styles.meta }, `${item.slotName} · 幸运 +${item.luck} · 攻 +${item.combat?.attack ?? 0} 防 +${item.combat?.defense ?? 0} 血 +${item.combat?.hp ?? 0} 速 +${item.combat?.speed ?? 0}`)),
                   h('button', { style: styles.btnGhost, onClick: () => buyItem(item.code), disabled: busy === `buy-${item.code}` }, `${item.price} 鱼饼`),
                 ),
               )
@@ -3858,7 +3940,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.73.1'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.74.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
