@@ -1551,6 +1551,37 @@ window.__ModuleLoader__.load({
         }
       }
 
+      const breakthroughCultivation = async () => {
+        setBusy('cultivation-breakthrough')
+        setError('')
+        try {
+          const data = await postJson('/cultivation/breakthrough', {})
+          if (!data.ok) setError(data.message ?? '突破失败')
+          else {
+            setNotice(data.success ? `突破成功，踏入「${data.cultivation?.title ?? '新境界'}」` : '突破失败，道心受挫')
+            await refreshMe()
+          }
+        } catch {
+          setError('突破失败')
+        } finally {
+          setBusy('')
+        }
+      }
+
+      const setCultivationSkill = async (skillId) => {
+        setBusy('cultivation-skill')
+        setError('')
+        try {
+          const data = await postJson('/cultivation/skill', { skillId })
+          if (!data.ok) setError(data.message ?? '切换功法失败')
+          else await refreshMe()
+        } catch {
+          setError('切换功法失败')
+        } finally {
+          setBusy('')
+        }
+      }
+
       const createCultivationCoop = async () => {
         setBusy('cultivation-coop')
         setError('')
@@ -2503,6 +2534,7 @@ window.__ModuleLoader__.load({
         const boardEntries = cultivationBoard?.entries ?? []
         const history = path.history ?? []
         const areas = path.areas ?? []
+        const skills = path.skills ?? []
         const selectedArea = areas.find((area) => area.id === cultivationArea)
           ?? areas.find((area) => area.unlocked) ?? areas[0] ?? null
         const selectedAreaId = selectedArea?.id ?? ''
@@ -2623,6 +2655,35 @@ window.__ModuleLoader__.load({
             statBox('会心', `${stats.crit ?? 0}%`),
             statBox('幸运', stats.luck ?? 0),
           ),
+          h(
+            'div',
+            { style: { ...styles.row, marginTop: 10, flexWrap: 'wrap' } },
+            h('span', { style: { fontWeight: 600 } }, '本命功法'),
+            h(
+              'select',
+              {
+                style: { ...styles.select, flex: '1 1 160px' },
+                value: path.skillId ?? '',
+                onChange: (event) => void setCultivationSkill(event.target.value),
+                disabled: busy === 'cultivation-skill',
+              },
+              skills.map((skill) => h('option', { key: skill.id, value: skill.id }, `${skill.name} · ${skill.effect === 'heal' ? '治疗' : skill.effect === 'shield' ? '护盾' : '攻击'}`)),
+            ),
+            h('span', { style: styles.meta }, path.skillName ?? ''),
+          ),
+          path.breakthroughReady
+            ? h(
+                'div',
+                { style: { marginTop: 10, padding: '8px 10px', borderRadius: 8, border: `1px solid ${COLORS.brand}`, background: DFY_BADGE_BG } },
+                h('div', { style: { fontWeight: 600 } }, `修为圆满，可冲击「${path.breakthroughTitle ?? '下一境界'}」`),
+                h('div', { style: { ...styles.meta, marginTop: 2 } }, `成功率 ${Math.round((path.breakthroughChance ?? 0) * 1000) / 10}% · 失败会损失部分修为`),
+                h('button', {
+                  style: { ...styles.btn, marginTop: 6 },
+                  onClick: breakthroughCultivation,
+                  disabled: busy === 'cultivation-breakthrough',
+                }, busy === 'cultivation-breakthrough' ? '冲击中…' : '冲击境界'),
+              )
+            : null,
           h(
             'div',
             { style: { ...styles.row, marginTop: 10, flexWrap: 'wrap' } },
@@ -4079,7 +4140,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.77.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.78.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
