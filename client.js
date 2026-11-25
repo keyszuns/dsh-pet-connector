@@ -855,7 +855,7 @@ window.__ModuleLoader__.load({
       const [autoCultivation, setAutoCultivation] = useState(() => {
         try { return localStorage.getItem('dfy.cultivation.auto') === '1' } catch { return false }
       })
-      const autoStartRef = useRef(null)
+      const autoStartRef = useRef(undefined)
       const startCultivationRef = useRef(null)
       const [cultivationPlayback, setCultivationPlayback] = useState(null)
       const [cultivationBoard, setCultivationBoard] = useState(null)
@@ -1618,13 +1618,14 @@ window.__ModuleLoader__.load({
       const toggleAutoCultivation = () => {
         const next = !autoCultivation
         setAutoCultivation(next)
-        if (!next) autoStartRef.current = null
+        if (!next) autoStartRef.current = undefined
         try { localStorage.setItem('dfy.cultivation.auto', next ? '1' : '0') } catch { /* ignore */ }
       }
 
       useEffect(() => {
         if (!open || !cultivationOpen || !autoCultivation) return undefined
-        if (!cultivationPlayback?.done || busy) return undefined
+        if (cultivationPlayback && !cultivationPlayback.done) return undefined
+        if (busy) return undefined
         if (autoStartRef.current === cultivationPlayback) return undefined
         const path = profile?.cultivation
         if (!path?.unlocked) return undefined
@@ -2868,6 +2869,9 @@ window.__ModuleLoader__.load({
                   'span',
                   {
                     key: `${item.kind}-${item.code}-${index}`,
+                    title: item.kind === 'gear' && item.combat
+                      ? `${item.slotName ?? ''} 攻击+${item.combat.attack ?? 0} 防御+${item.combat.defense ?? 0} 气血+${item.combat.hp ?? 0} 身法+${item.combat.speed ?? 0}`
+                      : item.kind === 'material' ? `材料 ×${item.amount ?? 1}` : undefined,
                     style: {
                       padding: '3px 8px',
                       borderRadius: 999,
@@ -3020,7 +3024,7 @@ window.__ModuleLoader__.load({
                   onClick: () => void craftPill(pill.code),
                   disabled: busy === 'cultivation-alchemy' || !pill.craftable,
                 },
-                pill.craftable ? '炼丹' : '材料不足',
+                pill.craftable ? '炼丹' : (pill.missing ? `缺 ${pill.missing}` : '材料不足'),
               ),
             )),
           ),
@@ -4618,7 +4622,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.89.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.90.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
