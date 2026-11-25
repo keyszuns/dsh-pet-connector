@@ -1,6 +1,6 @@
 {
   "name": "dsh-pet-connector",
-  "version": "0.72.8",
+  "version": "0.72.9",
   "private": false,
   "description": "Connect your local dsh-pet to Big Fat Fish World: pairing, city and birthday five-elements, world presence, and a three-tab panel.",
   "type": "module",
