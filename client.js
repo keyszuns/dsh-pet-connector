@@ -2283,7 +2283,7 @@ window.__ModuleLoader__.load({
           h('span', { style: { flex: '1 1 130px' } }, `${member.name}${member.host ? '（房主）' : ''}`),
           h('span', { style: styles.meta }, `${member.dfyId ?? ''} · Lv.${member.level}`),
           h('span', { style: styles.badge }, member.ready ? '已准备' : '未准备'),
-          room?.isHost && room.status === 'waiting' && !member.host
+          room?.isHost && !member.host
             ? h('button', {
                 style: { ...styles.link, marginLeft: 6 },
                 onClick: () => void coopKick(member.dfyId),
@@ -3858,7 +3858,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.73.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.73.1'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
