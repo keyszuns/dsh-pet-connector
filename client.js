@@ -830,13 +830,6 @@ window.__ModuleLoader__.load({
       const threadScrollRef = useRef(null)
       const [threadInput, setThreadInput] = useState('')
       const [threadFriendRequested, setThreadFriendRequested] = useState(false)
-      const coopFriendMatches = friends.filter((friend) => {
-        const query = coopFriendQuery.trim().toLowerCase()
-        if (!query) return true
-        return String(friend.name ?? '').toLowerCase().includes(query)
-          || String(friend.dfyId ?? '').toLowerCase().includes(query)
-      })
-      const coopFriendSelected = friends.find((friend) => friend.dfyId === coopFriendPick) ?? null
       const [board, setBoard] = useState(null)
       const [boardType, setBoardType] = useState('wealth')
       const [boardScope, setBoardScope] = useState('global')
@@ -856,6 +849,13 @@ window.__ModuleLoader__.load({
       const [coopInput, setCoopInput] = useState('')
       const [coopFriendQuery, setCoopFriendQuery] = useState('')
       const [coopFriendPick, setCoopFriendPick] = useState('')
+      const coopFriendMatches = friends.filter((friend) => {
+        const query = coopFriendQuery.trim().toLowerCase()
+        if (!query) return true
+        return String(friend.name ?? '').toLowerCase().includes(query)
+          || String(friend.dfyId ?? '').toLowerCase().includes(query)
+      })
+      const coopFriendSelected = friends.find((friend) => friend.dfyId === coopFriendPick) ?? null
       const [dungeonCoopCode, setDungeonCoopCode] = useState('')
       const [dungeonCoopInput, setDungeonCoopInput] = useState('')
       const [inventory, setInventory] = useState([])
@@ -3619,7 +3619,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.72.6'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.72.7'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
