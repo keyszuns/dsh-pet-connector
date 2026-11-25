@@ -1712,6 +1712,29 @@ window.__ModuleLoader__.load({
         }
       }
 
+      const claimAllCultivationAchievements = async (codes) => {
+        if (!codes?.length) return
+        setBusy('cultivation-achievement')
+        setError('')
+        let claimed = 0
+        try {
+          for (const code of codes) {
+            const data = await postJson('/cultivation/achievements/claim', { code })
+            if (!data.ok) {
+              setError(data.message ?? '部分成就领取失败')
+              break
+            }
+            claimed += 1
+          }
+          if (claimed > 0) setNotice(`已领取 ${claimed} 个修仙成就`)
+          await refreshMe()
+        } catch {
+          setError('部分成就领取失败')
+        } finally {
+          setBusy('')
+        }
+      }
+
       const createCultivationCoop = async () => {
         setBusy('cultivation-coop')
         setError('')
@@ -3154,7 +3177,21 @@ window.__ModuleLoader__.load({
             ? h(
                 'div',
                 { style: { marginTop: 10, borderTop: `1px solid ${DFY_BORDER}`, paddingTop: 10 } },
-                h('div', { style: { fontWeight: 600, marginBottom: 4 } }, '🏅 修仙成就'),
+                h(
+                  'div',
+                  { style: { ...styles.row, marginBottom: 4 } },
+                  h('span', { style: { fontWeight: 600 } }, '🏅 修仙成就'),
+                  achievements.some((achievement) => achievement.unlocked && !achievement.claimed)
+                    ? h('button', {
+                        style: { ...styles.btnGhost, padding: '3px 8px', marginLeft: 'auto' },
+                        onClick: () => void claimAllCultivationAchievements(
+                          achievements.filter((achievement) => achievement.unlocked && !achievement.claimed)
+                            .map((achievement) => achievement.code),
+                        ),
+                        disabled: busy === 'cultivation-achievement',
+                      }, '一键领取')
+                    : null,
+                ),
                 achievements.map((achievement) => h(
                   'div',
                   {
@@ -4729,7 +4766,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.94.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.95.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
