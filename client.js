@@ -1599,6 +1599,10 @@ window.__ModuleLoader__.load({
           setError(`秘境还在进行，还需等待 ${Math.ceil(pathNow.runCooldownMs / 1000)} 秒`)
           return
         }
+        if (pathNow?.seclusion?.active || pathNow?.seclusion?.ready) {
+          setError('闭关中或闭关奖励尚未领取，暂时不能进入秘境')
+          return
+        }
         setBusy('cultivation')
         setError('')
         try {
@@ -1641,6 +1645,7 @@ window.__ModuleLoader__.load({
         if (autoStartRef.current === cultivationPlayback) return undefined
         const path = profile?.cultivation
         if (!path?.unlocked) return undefined
+        if (path.seclusion?.active || path.seclusion?.ready) return undefined
         const cooldown = Math.max(0, path.runCooldownMs ?? 0)
         const safeArea = autoSafeArea
           ? ((path.areas ?? [])
@@ -1654,7 +1659,8 @@ window.__ModuleLoader__.load({
         }, Math.max(300, cooldown + 300))
         return () => clearTimeout(timer)
       }, [open, cultivationOpen, autoCultivation, autoSafeArea, cultivationPlayback, busy,
-        profile?.cultivation?.runCooldownMs, profile?.cultivation?.unlocked, profile?.cultivation?.areas])
+        profile?.cultivation?.runCooldownMs, profile?.cultivation?.unlocked, profile?.cultivation?.areas,
+        profile?.cultivation?.seclusion?.active, profile?.cultivation?.seclusion?.ready])
 
       const breakthroughCultivation = async () => {
         if (cultivationPill && !breakthroughConfirm) {
@@ -1750,8 +1756,7 @@ window.__ModuleLoader__.load({
         }
       }
 
-      const claimAllCultivationDaily = async (codes) => {
-        if (!codes?.length) return
+      const claimAllCultivationDaily = async (codes) => {        if (!codes?.length) return
         setBusy('cultivation-daily')
         setError('')
         let claimed = 0
@@ -1768,6 +1773,40 @@ window.__ModuleLoader__.load({
           await refreshMe()
         } catch {
           setError('部分每日任务领取失败')
+        } finally {
+          setBusy('')
+        }
+      }
+
+      const startCultivationSeclusion = async (hours) => {
+        setBusy('cultivation-seclusion')
+        setError('')
+        try {
+          const data = await postJson('/cultivation/seclusion/start', { hours })
+          if (!data.ok) setError(data.message ?? '闭关失败')
+          else {
+            setNotice(`开始闭关 ${hours} 小时`)
+            await refreshMe()
+          }
+        } catch {
+          setError('闭关失败')
+        } finally {
+          setBusy('')
+        }
+      }
+
+      const claimCultivationSeclusion = async () => {
+        setBusy('cultivation-seclusion')
+        setError('')
+        try {
+          const data = await postJson('/cultivation/seclusion/claim', {})
+          if (!data.ok) setError(data.message ?? '出关失败')
+          else {
+            setNotice('出关成功，奖励已领取')
+            await refreshMe()
+          }
+        } catch {
+          setError('出关失败')
         } finally {
           setBusy('')
         }
@@ -2766,7 +2805,9 @@ window.__ModuleLoader__.load({
         const activeChance = selectedPill ? selectedPill.chanceWithPill : baseChance
         const runInProgress = Boolean(cultivationPlayback && !cultivationPlayback.done)
         const serverRunCooldown = Math.max(0, path.runCooldownMs ?? 0)
-        const runLocked = runInProgress || serverRunCooldown > 0
+        const seclusion = path.seclusion ?? {}
+        const seclusionBlocked = Boolean(seclusion.active || seclusion.ready)
+        const runLocked = runInProgress || serverRunCooldown > 0 || seclusionBlocked
         const cooldownSeconds = Math.max(0, Math.ceil(serverRunCooldown / 1000))
         const selectedArea = areas.find((area) => area.id === cultivationArea)
           ?? areas.find((area) => area.unlocked) ?? areas[0] ?? null
@@ -3036,9 +3077,42 @@ window.__ModuleLoader__.load({
                 h('span', { style: styles.meta }, '在已解锁且难度为轻松/适中的秘境中选择收益最高的'),
               )
             : null,
-          runLocked && !runInProgress && serverRunCooldown > 0
-            ? h('div', { style: { ...styles.hint, color: COLORS.warn, marginTop: 6 } }, `秘境进行中，${cooldownSeconds} 秒后可再次进入。`)
-            : null,
+          h(
+            'div',
+            { style: { marginTop: 8, padding: '6px 8px', borderRadius: 8, border: `1px solid ${DFY_BORDER_SOFT}`, background: DFY_GHOST_BG } },
+            h(
+              'div',
+              { style: styles.row },
+              h('span', { style: { fontWeight: 600 } }, seclusion.active ? '🧘 闭关中' : seclusion.ready ? '🧘 闭关结束' : '🧘 闭关'),
+              seclusion.active
+                ? h('span', { style: { ...styles.meta, marginLeft: 'auto' } },
+                    `剩余 ${Math.floor((seclusion.remainingMs ?? 0) / 3600000)} 小时 ${Math.floor(((seclusion.remainingMs ?? 0) % 3600000) / 60000)} 分`)
+                : null,
+            ),
+            seclusion.active
+              ? h('div', { style: { ...styles.meta, marginTop: 3 } },
+                  `出关可得修为 +${seclusion.rewardXp ?? 0} · 鱼饼 +${seclusion.rewardCoins ?? 0}`)
+              : seclusion.ready
+                ? h('div', { style: { ...styles.row, marginTop: 4, gap: 6 } },
+                    h('span', { style: styles.meta }, `修为 +${seclusion.rewardXp ?? 0} · 鱼饼 +${seclusion.rewardCoins ?? 0}`),
+                    h('button', {
+                      style: { ...styles.btnGhost, padding: '3px 8px' },
+                      onClick: claimCultivationSeclusion,
+                      disabled: busy === 'cultivation-seclusion',
+                    }, '出关领取'),
+                  )
+                : h(
+                    'div',
+                    { style: { ...styles.row, marginTop: 4, gap: 5, flexWrap: 'wrap' } },
+                    h('span', { style: styles.meta }, '关闭 DSH 也会继续计时，期间不能进秘境：'),
+                    [1, 2, 4, 8].map((hours) => h('button', {
+                      key: hours,
+                      style: { ...styles.btnGhost, padding: '3px 8px' },
+                      onClick: () => void startCultivationSeclusion(hours),
+                      disabled: busy === 'cultivation-seclusion' || runInProgress || serverRunCooldown > 0,
+                    }, `${hours} 小时`)),
+                  ),
+          ),
           h(
             'div',
             { style: { ...styles.meta, marginTop: 6 } },
@@ -3407,12 +3481,16 @@ window.__ModuleLoader__.load({
             h('span', {
               style: {
                 ...styles.meta,
-                color: runInProgress ? COLORS.brand : serverRunCooldown > 0 ? COLORS.warn : COLORS.ok,
+                color: runInProgress ? COLORS.brand
+                  : seclusion.active || seclusion.ready ? COLORS.warn
+                    : serverRunCooldown > 0 ? COLORS.warn : COLORS.ok,
                 fontWeight: 600,
               },
             }, runInProgress
               ? `秘境进行中 ${Math.floor((cultivationPlayback?.elapsed ?? 0) / 60)}:${String((cultivationPlayback?.elapsed ?? 0) % 60).padStart(2, '0')} / 5:00`
-              : serverRunCooldown > 0 ? `秘境冷却 ${cooldownSeconds}s` : '秘境就绪'),
+              : seclusion.active
+                ? `闭关中 ${Math.floor((seclusion.remainingMs ?? 0) / 3600000)}h${Math.floor(((seclusion.remainingMs ?? 0) % 3600000) / 60000)}m`
+                : seclusion.ready ? '闭关结束，待出关' : serverRunCooldown > 0 ? `秘境冷却 ${cooldownSeconds}s` : '秘境就绪'),
             autoCultivation ? h('span', { style: { ...styles.meta, color: COLORS.brand } }, '· 挂机模式') : null,
           ),
           tabBar,
@@ -4906,7 +4984,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '1.3.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '1.4.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
