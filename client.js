@@ -1049,6 +1049,14 @@ window.__ModuleLoader__.load({
         setCultivationOpen(true)
       }, [])
 
+      useEffect(() => {
+        if (!open || cultivationPlayback) return
+        const room = coopRoom
+        if (room?.jobId !== 'cultivation') return
+        const log = room.cultivation
+        if (log?.segments?.length) beginCultivationPlayback(log)
+      }, [open, coopRoom, cultivationPlayback, beginCultivationPlayback])
+
       const refreshMessages = useCallback(async () => {
         // 页面不可见时暂停轮询，避免后台标签页持续打服务器。
         if (typeof document !== 'undefined' && document.hidden) return
@@ -4358,7 +4366,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.81.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.82.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
