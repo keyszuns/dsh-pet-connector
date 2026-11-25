@@ -868,6 +868,7 @@ window.__ModuleLoader__.load({
       const seclusionReadyRef = useRef(false)
       const battleLogRef = useRef(null)
       const achievementSeenRef = useRef(null)
+      const autoDefeatRef = useRef(0)
       const [cultivationPlayback, setCultivationPlayback] = useState(null)
       const [cultivationBoard, setCultivationBoard] = useState(null)
       const [cultivationScope, setCultivationScope] = useState('global')
@@ -1633,6 +1634,17 @@ window.__ModuleLoader__.load({
           })
           if (!data.ok) setError(data.message ?? '修仙失败')
           else {
+            const outcome = data.log?.outcome
+            if (outcome === 'defeat') {
+              autoDefeatRef.current += 1
+              if (autoCultivation && autoDefeatRef.current >= 3) {
+                setAutoCultivation(false)
+                try { localStorage.setItem('dfy.cultivation.auto', '0') } catch { /* ignore */ }
+                setNotice('连续失败 3 次，已暂停挂机，请换个安全地区')
+              }
+            } else {
+              autoDefeatRef.current = 0
+            }
             beginCultivationPlayback(data.log)
             setNotice('进入秘境，日志将每 5 秒推进一步')
             await refreshMe()
@@ -1647,6 +1659,7 @@ window.__ModuleLoader__.load({
 
       const toggleAutoCultivation = () => {
         const next = !autoCultivation
+        autoDefeatRef.current = 0
         setAutoCultivation(next)
         if (!next) autoStartRef.current = undefined
         try { localStorage.setItem('dfy.cultivation.auto', next ? '1' : '0') } catch { /* ignore */ }
@@ -5121,7 +5134,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '1.9.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '1.9.1'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
