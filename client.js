@@ -855,6 +855,9 @@ window.__ModuleLoader__.load({
       const [autoCultivation, setAutoCultivation] = useState(() => {
         try { return localStorage.getItem('dfy.cultivation.auto') === '1' } catch { return false }
       })
+      const [autoSafeArea, setAutoSafeArea] = useState(() => {
+        try { return localStorage.getItem('dfy.cultivation.safeArea') === '1' } catch { return false }
+      })
       const autoStartRef = useRef(undefined)
       const startCultivationRef = useRef(null)
       const [cultivationPlayback, setCultivationPlayback] = useState(null)
@@ -1586,7 +1589,7 @@ window.__ModuleLoader__.load({
         }
       }
 
-      const startCultivation = async () => {
+      const startCultivation = async (areaOverride = null) => {
         const pathNow = profile?.cultivation
         if (cultivationPlayback && !cultivationPlayback.done) {
           setError('秘境正在进行，等这次日志走完再进')
@@ -1601,7 +1604,9 @@ window.__ModuleLoader__.load({
         try {
           const areas = profile?.cultivation?.areas ?? []
           const fallbackArea = areas.find((area) => area.unlocked)?.id
-          const data = await postJson('/cultivation/start', { areaId: cultivationArea || fallbackArea })
+          const data = await postJson('/cultivation/start', {
+            areaId: areaOverride || cultivationArea || fallbackArea,
+          })
           if (!data.ok) setError(data.message ?? '修仙失败')
           else {
             beginCultivationPlayback(data.log)
@@ -1623,6 +1628,12 @@ window.__ModuleLoader__.load({
         try { localStorage.setItem('dfy.cultivation.auto', next ? '1' : '0') } catch { /* ignore */ }
       }
 
+      const toggleAutoSafeArea = () => {
+        const next = !autoSafeArea
+        setAutoSafeArea(next)
+        try { localStorage.setItem('dfy.cultivation.safeArea', next ? '1' : '0') } catch { /* ignore */ }
+      }
+
       useEffect(() => {
         if (!open || !cultivationOpen || !autoCultivation) return undefined
         if (cultivationPlayback && !cultivationPlayback.done) return undefined
@@ -1631,13 +1642,19 @@ window.__ModuleLoader__.load({
         const path = profile?.cultivation
         if (!path?.unlocked) return undefined
         const cooldown = Math.max(0, path.runCooldownMs ?? 0)
+        const safeArea = autoSafeArea
+          ? ((path.areas ?? [])
+              .filter((area) => area.unlocked
+                && (!area.difficulty || area.difficulty === '轻松' || area.difficulty === '适中'))
+              .sort((a, b) => (b.rewardMult ?? 0) - (a.rewardMult ?? 0))[0]?.id ?? null)
+          : null
         const timer = setTimeout(() => {
           autoStartRef.current = cultivationPlayback
-          void startCultivationRef.current?.()
+          void startCultivationRef.current?.(safeArea)
         }, Math.max(300, cooldown + 300))
         return () => clearTimeout(timer)
-      }, [open, cultivationOpen, autoCultivation, cultivationPlayback, busy,
-        profile?.cultivation?.runCooldownMs, profile?.cultivation?.unlocked])
+      }, [open, cultivationOpen, autoCultivation, autoSafeArea, cultivationPlayback, busy,
+        profile?.cultivation?.runCooldownMs, profile?.cultivation?.unlocked, profile?.cultivation?.areas])
 
       const breakthroughCultivation = async () => {
         if (cultivationPill && !breakthroughConfirm) {
@@ -2915,7 +2932,7 @@ window.__ModuleLoader__.load({
             { style: { ...styles.row, marginTop: 10, flexWrap: 'wrap' } },
             h('button', {
               style: styles.btn,
-              onClick: startCultivation,
+              onClick: () => void startCultivation(),
               disabled: busy === 'cultivation' || !path.unlocked
                 || Boolean(selectedArea && !selectedArea.unlocked) || runLocked,
             }, !path.unlocked ? `Lv.${path.unlockLevel} 解锁` : selectedArea && !selectedArea.unlocked
@@ -2983,6 +3000,19 @@ window.__ModuleLoader__.load({
               ? '本场日志结束后自动进入下一次秘境，关闭弹窗会停止'
               : '开启后本场结束自动进入下一次，不需要反复点击'),
           ),
+          autoCultivation
+            ? h(
+                'label',
+                { style: { ...styles.row, marginTop: 4, gap: 6, cursor: 'pointer' } },
+                h('input', {
+                  type: 'checkbox',
+                  checked: autoSafeArea,
+                  onChange: toggleAutoSafeArea,
+                }),
+                h('span', { style: { fontWeight: 600 } }, '自动选安全地区'),
+                h('span', { style: styles.meta }, '在已解锁且难度为轻松/适中的秘境中选择收益最高的'),
+              )
+            : null,
           runLocked && !runInProgress && serverRunCooldown > 0
             ? h('div', { style: { ...styles.hint, color: COLORS.warn, marginTop: 6 } }, `秘境进行中，${cooldownSeconds} 秒后可再次进入。`)
             : null,
@@ -4840,7 +4870,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '1.1.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '1.2.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
