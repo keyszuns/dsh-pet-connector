@@ -1052,7 +1052,7 @@ window.__ModuleLoader__.load({
           done: false,
           harvestLog: log.harvestLog ?? '',
           coins: log.coins ?? 0,
-          xp: log.xp ?? 0,
+          xp: log.cultivation?.gain ?? log.xp ?? 0,
           loot: log.loot ?? [],
         })
         setCultivationOpen(true)
@@ -2803,6 +2803,10 @@ window.__ModuleLoader__.load({
                     'div',
                     null,
                     h('div', { style: { fontWeight: 600, margin: '8px 0 4px' } }, '🌾 收获日志'),
+                    playback
+                      ? h('div', { style: { ...styles.meta, color: COLORS.ok } },
+                          `本次收益：鱼饼 +${playback.coins ?? 0} · 修为 +${playback.xp ?? 0}`)
+                      : null,
                     h('pre', {
                       style: {
                         margin: 0,
@@ -4792,7 +4796,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.97.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.98.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
