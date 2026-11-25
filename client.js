@@ -846,6 +846,8 @@ window.__ModuleLoader__.load({
       const [chatText, setChatText] = useState('')
       const [friendDfy, setFriendDfy] = useState('')
       const [coopCode, setCoopCode] = useState('')
+      const [coopRoom, setCoopRoom] = useState(null)
+      const [coopFriends, setCoopFriends] = useState([])
       const [coopInput, setCoopInput] = useState('')
       const [coopFriendQuery, setCoopFriendQuery] = useState('')
       const [coopFriendPick, setCoopFriendPick] = useState('')
@@ -1008,6 +1010,19 @@ window.__ModuleLoader__.load({
         }
       }, [])
 
+      const refreshCoop = useCallback(async () => {
+        if (typeof document !== 'undefined' && document.hidden) return
+        const [data, friendData] = await Promise.all([
+          call('/coop/status'),
+          call('/coop/friends'),
+        ])
+        if (data?.ok) {
+          setCoopRoom(data.coop ?? null)
+          if (data.coop?.code) setCoopCode(data.coop.code)
+        }
+        if (friendData?.ok) setCoopFriends(friendData.friends ?? [])
+      }, [])
+
       const refreshMessages = useCallback(async () => {
         // 页面不可见时暂停轮询，避免后台标签页持续打服务器。
         if (typeof document !== 'undefined' && document.hidden) return
@@ -1137,7 +1152,7 @@ window.__ModuleLoader__.load({
 
       useEffect(() => {
         if (!open) return undefined
-        if (!['world', 'friends', 'messages'].includes(tab)) return undefined
+        if (!['world', 'friends', 'messages', 'adventure'].includes(tab)) return undefined
         const load = () => {
           if (tab === 'world') {
             void refreshBoard()
@@ -1163,7 +1178,15 @@ window.__ModuleLoader__.load({
         void refreshThread()
         const timer = setInterval(() => void refreshThread(), 5000)
         return () => clearInterval(timer)
-      }, [open, tab, threadPeer?.dfyId, refreshThread])
+      }, [open, tab, refreshThread])
+
+      useEffect(() => {
+        if (!open) return undefined
+        if (!['adventure', 'friends'].includes(tab)) return undefined
+        void refreshCoop()
+        const timer = setInterval(() => void refreshCoop(), 3000)
+        return () => clearInterval(timer)
+      }, [open, tab, refreshCoop])
 
       const loadRegionOptions = useCallback(async (country, keepCurrent = false) => {
         try {
@@ -1964,8 +1987,10 @@ window.__ModuleLoader__.load({
           const data = await postJson('/coop/create', { jobId, minutes })
           if (!data.ok) setError(data.message ?? '发起结伴失败')
           else {
-            setCoopCode(data.code)
-            await refreshMe()
+            setCoopRoom(data.coop ?? null)
+            setCoopCode(data.code ?? data.coop?.code ?? '')
+            await refreshFriends()
+            setNotice('结伴房间已创建，等好友准备')
           }
         } catch {
           setError('发起结伴失败')
@@ -1983,10 +2008,11 @@ window.__ModuleLoader__.load({
           const data = await postJson('/coop/join-friend', { dfyId: target })
           if (!data.ok) setError(data.message ?? '加入结伴失败')
           else {
-            setCoopCode(data.code ?? '')
+            setCoopRoom(data.coop ?? null)
+            setCoopCode(data.code ?? data.coop?.code ?? '')
             setCoopFriendPick('')
             setCoopFriendQuery('')
-            await refreshMe()
+            setNotice('已进入好友的结伴房间')
           }
         } catch {
           setError('加入结伴失败')
@@ -2004,15 +2030,97 @@ window.__ModuleLoader__.load({
           const data = await postJson('/coop/join', { code })
           if (!data.ok) setError(data.message ?? '加入结伴失败')
           else {
-            setCoopCode(code)
+            setCoopRoom(data.coop ?? null)
+            setCoopCode(data.code ?? data.coop?.code ?? code)
             setCoopInput('')
-            await refreshMe()
+            setNotice('已加入结伴房间')
           }
         } catch {
           setError('加入结伴失败')
         } finally {
           setBusy('')
         }
+      }
+
+      const coopReady = async () => {
+        setBusy('coop-ready')
+        setError('')
+        try {
+          const data = await postJson('/coop/ready', { ready: !coopRoom?.youReady })
+          if (!data.ok) setError(data.message ?? '准备失败')
+          else {
+            setCoopRoom(data.coop ?? null)
+            await refreshMe()
+          }
+        } catch {
+          setError('准备失败')
+        } finally {
+          setBusy('')
+        }
+      }
+
+      const coopStart = async () => {
+        setBusy('coop-start')
+        setError('')
+        try {
+          const data = await postJson('/coop/start', {})
+          if (!data.ok) setError(data.message ?? '开始结伴失败')
+          else {
+            setCoopRoom(data.coop ?? null)
+            await refreshMe()
+            setNotice('结伴摸鱼开始，和日常摸鱼/下楼溜达互不冲突')
+          }
+        } catch {
+          setError('开始结伴失败')
+        } finally {
+          setBusy('')
+        }
+      }
+
+      const coopKick = async (dfyId) => {
+        if (!dfyId) return
+        if (typeof window !== 'undefined' && typeof window.confirm === 'function'
+          && !window.confirm('确定把这位成员请出房间吗？对方 30 秒内不能重新加入。')) return
+        setBusy('coop-kick')
+        setError('')
+        try {
+          const data = await postJson('/coop/kick', { dfyId })
+          if (!data.ok) setError(data.message ?? '踢人失败')
+          else {
+            setCoopRoom(data.coop ?? null)
+            setNotice('已请出该成员')
+          }
+        } catch {
+          setError('踢人失败')
+        } finally {
+          setBusy('')
+        }
+      }
+
+      const coopLeave = async () => {
+        if (typeof window !== 'undefined' && typeof window.confirm === 'function'
+          && !window.confirm(coopRoom?.isHost ? '解散这个结伴房间？' : '离开结伴房间？')) return
+        setBusy('coop-leave')
+        setError('')
+        try {
+          const data = await postJson('/coop/leave', {})
+          if (!data.ok) setError(data.message ?? '离开房间失败')
+          else {
+            setCoopRoom(null)
+            setCoopCode('')
+            await refreshFriends()
+            setNotice('已离开结伴房间')
+          }
+        } catch {
+          setError('离开房间失败')
+        } finally {
+          setBusy('')
+        }
+      }
+
+      const coopDismiss = () => {
+        setCoopRoom(null)
+        setCoopCode('')
       }
 
       const exportData = async () => {
@@ -2161,6 +2269,165 @@ window.__ModuleLoader__.load({
       const earnedCoins = shift?.earned?.coins ?? 0
       const shownXp = Math.min(caps.xp, today?.xp ?? 0)
       const shownCoins = Math.min(caps.coins, today?.coins ?? 0)
+
+      const coopCard = (() => {
+        const room = coopRoom
+        const pct = (value) => `${value >= 1 ? '+' : ''}${Math.round((value - 1) * 100)}%`
+        const roomStatusText = room?.status === 'waiting' ? '等待准备'
+          : room?.status === 'active' ? '摸鱼进行中'
+            : room?.status === 'finished' ? '已完成'
+              : ''
+        const memberRow = (member) => h(
+          'div',
+          { key: member.petId, style: { ...styles.row, padding: '5px 0', borderBottom: `1px solid ${DFY_BORDER}` } },
+          h('span', { style: { flex: '1 1 130px' } }, `${member.name}${member.host ? '（房主）' : ''}`),
+          h('span', { style: styles.meta }, `${member.dfyId ?? ''} · Lv.${member.level}`),
+          h('span', { style: styles.badge }, member.ready ? '已准备' : '未准备'),
+          room?.isHost && room.status === 'waiting' && !member.host
+            ? h('button', {
+                style: { ...styles.link, marginLeft: 6 },
+                onClick: () => void coopKick(member.dfyId),
+                disabled: busy === 'coop-kick',
+              }, '踢出')
+            : null,
+        )
+        const friendRows = coopFriendMatches.length
+          ? coopFriendMatches.map((friend) => {
+              const coopEntry = coopFriends.find((entry) => entry.dfyId === friend.dfyId)
+              const friendRoom = coopEntry?.coop
+              return h(
+                'div',
+                { key: friend.dfyId, style: { ...styles.row, padding: '5px 0', borderBottom: `1px solid ${DFY_BORDER}` } },
+                h('span', { style: { flex: '1 1 120px' } }, `${friend.name} · ${friend.dfyId ?? ''}`),
+                h('span', { style: styles.meta }, friendRoom
+                  ? `${friendRoom.status === 'active' ? '结伴中' : '等准备'} · ${friendRoom.memberCount}/${friendRoom.maxMembers} · ${friendRoom.code}`
+                  : '未在结伴'),
+                friendRoom?.canJoin
+                  ? h('button', {
+                      style: styles.btnGhost,
+                      onClick: () => void joinCoopFriend(friend.dfyId),
+                      disabled: busy === 'coop-join-friend',
+                    }, '加入房间')
+                  : friendRoom
+                    ? h('span', { style: styles.meta }, friendRoom.status === 'active' ? '已开始' : '不可加入')
+                    : null,
+              )
+            })
+          : h('div', { style: styles.hint }, friends.length === 0 ? '还没有好友。去「世界」加好友后才能结伴。' : '没有符合搜索条件的好友。')
+
+        const roomMembers = room?.members?.length
+          ? room.members.map(memberRow)
+          : h('div', { style: styles.hint }, '还没有成员。')
+
+        const roomCompat = room?.compat
+          ? h(
+              'div',
+              { style: { marginTop: 8 } },
+              h('div', { style: styles.hint }, `相性叠加：鱼饼 ${pct(room.compat.coinMult)} · 经验 ${pct(room.compat.xpMult)} · ${room.compat.pairs} 对关系`),
+              renderCompatLine(room.compat),
+            )
+          : null
+
+        if (!room) {
+          return h(
+            'div',
+            { style: styles.card },
+            h(
+              'div',
+              { style: styles.row },
+              h('span', { style: { fontWeight: 600 } }, '结伴摸鱼'),
+              h('span', { style: styles.meta }, '房间制 · 最多 4 人 · 与日常摸鱼/下楼溜达并行'),
+            ),
+            h(
+              'div',
+              { style: { ...styles.row, marginTop: 8, flexWrap: 'wrap' } },
+              h(
+                'select',
+                { style: { ...styles.select, flex: '1 1 140px' }, value: jobId, onChange: (event) => setJobId(event.target.value) },
+                jobs.length
+                  ? jobs.map((job) => h('option', { key: job.id, value: job.id, disabled: !job.unlocked }, `${job.name}${job.unlocked ? '' : `（Lv.${job.unlockLevel}）`}`))
+                  : [h('option', { key: 'convenience', value: 'convenience' }, '便利店店员')],
+              ),
+              h(
+                'select',
+                { style: { ...styles.select, flex: '0 0 110px' }, value: minutes, onChange: (event) => setMinutes(Number(event.target.value)) },
+                [15, 30, 60].map((value) => h('option', { key: value, value }, `${value} 分钟`)),
+              ),
+              h('button', { style: styles.btn, onClick: createCoop, disabled: busy === 'coop-create' }, '创建房间'),
+            ),
+            h('div', { style: styles.hint }, '创建后会进入等待房间；好友可以点击你的房间直接加入。'),
+            h(
+              'div',
+              { style: { ...styles.row, marginTop: 10, flexWrap: 'wrap' } },
+              h('input', {
+                style: { ...styles.select, flex: '1 1 170px' },
+                placeholder: '输入房间码，例如 COOP-AB12',
+                maxLength: 16,
+                value: coopInput,
+                onChange: (event) => setCoopInput(event.target.value.toUpperCase()),
+                onKeyDown: (event) => {
+                  if (event.key === 'Enter') void joinCoop()
+                },
+              }),
+              h('button', { style: styles.btnGhost, onClick: joinCoop, disabled: busy === 'coop-join' || !coopInput.trim() }, '用房间码加入'),
+            ),
+            h('div', { style: { marginTop: 12 } }, h('div', { style: styles.hint }, '好友的结伴状态'), friendRows),
+            h('div', { style: styles.hint }, '每个房间最多 4 人；结伴奖励和日常摸鱼、下楼溜达分别结算，不会互相取消。'),
+          )
+        }
+
+        return h(
+          'div',
+          { style: { ...styles.card, borderColor: room.status === 'active' ? COLORS.ok : DFY_BORDER } },
+          h(
+            'div',
+            { style: styles.row },
+            h('span', { style: { fontWeight: 600 } }, '结伴摸鱼'),
+            h('span', { style: styles.badge }, roomStatusText),
+            h('span', { style: styles.meta }, `${room.code} · ${room.jobName} · ${room.minutes} 分钟 · ${room.memberCount}/${room.maxMembers}`),
+          ),
+          h('div', { style: { ...styles.row, marginTop: 8 } }, roomMembers),
+          roomCompat,
+          room.status === 'waiting'
+            ? h(
+                'div',
+                null,
+                h('div', { style: styles.hint }, `房主：${room.hostName} · 已准备 ${room.readyCount}/${room.memberCount} · 房间最多 4 人`),
+                h(
+                  'div',
+                  { style: { ...styles.row, marginTop: 8, flexWrap: 'wrap' } },
+                  h('button', { style: room.youReady ? styles.btnGhost : styles.btn, onClick: coopReady, disabled: busy === 'coop-ready' }, room.youReady ? '取消准备' : '准备'),
+                  room.isHost
+                    ? h('button', { style: styles.btn, onClick: coopStart, disabled: busy === 'coop-start' || !room.canStart }, room.canStart ? '开始结伴摸鱼' : '等全员准备')
+                    : h('span', { style: styles.meta }, '等房主开始'),
+                  h('button', { style: styles.btnGhost, onClick: coopLeave, disabled: busy === 'coop-leave' }, room.isHost ? '解散房间' : '离开房间'),
+                ),
+                h('div', { style: styles.hint }, '全员准备后房主才能开始；开始后和日常摸鱼/下楼溜达同时进行。'),
+              )
+            : room.status === 'active'
+              ? h(
+                  'div',
+                  null,
+                  h('div', { style: styles.hint }, `进行中，剩余 ${remainText(room.endsAt ?? Date.now(), 0)}；与日常摸鱼/下楼溜达并行，互不取消。`),
+                  h('div', { style: styles.hint }, '结束后奖励会自动结算，不需要手动领取。'),
+                )
+              : h(
+                  'div',
+                  null,
+                  h('div', { style: styles.hint }, '这次结伴摸鱼已完成，奖励已到账。'),
+                  room.viewerReward
+                    ? h('div', { style: styles.hint }, `本次获得 +${room.viewerReward.coins} 鱼饼 · +${room.viewerReward.xp} 经验`)
+                    : null,
+                  h(
+                    'div',
+                    { style: { ...styles.row, marginTop: 8 } },
+                    h('button', { style: styles.btnGhost, onClick: coopDismiss }, '收起'),
+                    h('button', { style: styles.btnGhost, onClick: coopLeave, disabled: busy === 'coop-leave' }, '离开房间'),
+                  ),
+                ),
+          room.status === 'waiting' ? h('div', { style: { marginTop: 12 } }, h('div', { style: styles.hint }, '好友的结伴状态'), friendRows) : null,
+        )
+      })()
 
       const meTab = h(
         'div',
@@ -2517,77 +2784,7 @@ window.__ModuleLoader__.load({
               ),
             )
           : null,
-        h(
-          'div',
-          { style: styles.card },
-          h(
-            'div',
-            { style: styles.row },
-            h('span', { style: { fontWeight: 600 } }, '结伴摸鱼'),
-            h('span', { style: styles.meta }, '基础 鱼饼 +20% · 经验 +10% · 属相/八字合冲浮动'),
-          ),
-          shift?.coop
-            ? h(
-                'div',
-                null,
-                h(
-                  'div',
-                  { style: styles.hint },
-                  shift.coopActive
-                    ? `结伴中${coopCode ? ` · 结伴码 ${coopCode}` : ''}；加成已生效（鱼饼 +20% · 经验 +10%）。`
-                    : `等待好友加入${coopCode ? ` · 结伴码 ${coopCode}` : ''}；好友进来后加成生效。`,
-                ),
-                renderCompatLine(shift.compat),
-              )
-            : h(
-                'div',
-                null,
-                h(
-                  'div',
-                  { style: { ...styles.row, marginTop: 8, flexWrap: 'wrap' } },
-                  h('button', { style: styles.btn, onClick: createCoop, disabled: busy === 'coop-create' || Boolean(shift) }, '发起结伴'),
-                  h(
-                    'input',
-                    {
-                      style: { ...styles.select, flex: '1 1 150px', minWidth: 120 },
-                      placeholder: '搜索好友名字 / ID',
-                      value: coopFriendQuery,
-                      onChange: (event) => {
-                        setCoopFriendQuery(event.target.value)
-                        setCoopFriendPick('')
-                      },
-                      onKeyDown: (event) => {
-                        if (event.key === 'Enter' && coopFriendPick) void joinCoopFriend(coopFriendPick)
-                      },
-                    },
-                  ),
-                  h(
-                    'select',
-                    {
-                      style: { ...styles.select, flex: '1 1 170px', minWidth: 140 },
-                      value: coopFriendPick,
-                      onChange: (event) => setCoopFriendPick(event.target.value),
-                      disabled: friends.length === 0,
-                    },
-                    h('option', { value: '' }, friends.length === 0 ? '还没有好友' : '选择好友'),
-                    coopFriendMatches.map((friend) =>
-                      h('option', { key: friend.dfyId, value: friend.dfyId }, `${friend.name}（${friend.dfyId}）${friend.online ? ' · 在线' : ''}`),
-                    ),
-                  ),
-                  h('button', {
-                    style: styles.btnGhost,
-                    onClick: () => void joinCoopFriend(coopFriendPick),
-                    disabled: busy === 'coop-join-friend' || Boolean(shift) || !coopFriendPick,
-                  }, '加入'),
-                ),
-                coopFriendSelected
-                  ? h('div', { style: styles.hint }, `已选择：${coopFriendSelected.name} · ${coopFriendSelected.dfyId}${coopFriendSelected.region ? ` · ${coopFriendSelected.region}` : ''}`)
-                  : null,
-                coopCode ? h('div', { style: styles.hint }, `结伴码：${coopCode}（发给好友，双方用同一个班次）`) : null,
-              ),
-          h('div', { style: styles.hint }, friends.length === 0 ? '先加好友才能结伴：去「世界」顶部的好友卡添加。' : '只能和好友结伴；每天同一好友最多 3 次加成。'),
-          h('div', { style: styles.hint }, '结伴收益会按双方属相（六合/三合/六冲）与八字（月柱/日柱）合冲浮动：相合有加成，相冲会减成；组队后显示具体修正。'),
-        ),
+        coopCard,
         quests.length
           ? h(
               'div',
@@ -3661,7 +3858,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '0.72.9'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '0.73.0'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
