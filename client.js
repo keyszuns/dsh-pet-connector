@@ -3548,6 +3548,10 @@ window.__ModuleLoader__.load({
             { style: { height: 6, borderRadius: 999, background: DFY_TRACK_BG, overflow: 'hidden', marginTop: 6 } },
             h('div', { style: { width: `${Math.round(cultivationProgress * 100)}%`, height: '100%', background: COLORS.brand } }),
           ),
+          h('div', { style: { ...styles.meta, marginTop: 4 } },
+            path.breakthroughReady
+              ? `修为已满，可冲击「${path.breakthroughTitle ?? '下一境界'}」`
+              : `距离突破还需 ${Math.max(0, (path.nextXp ?? cultivationNext) - (path.cultivationXp ?? cultivationXp))} 修为`),
           h(
             'div',
             { style: { ...styles.row, marginTop: 4, gap: 6 } },
@@ -5057,7 +5061,7 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { style: styles.footer },
-            h('span', null, `v${status?.version ?? '1.8.1'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
+            h('span', null, `v${status?.version ?? '1.8.2'} · ${paired ? '右键宠物 →「打开大肥鱼世界」随时回来 · 暂离保留登录' : '加入后：右键宠物 →「打开大肥鱼世界」'}`),
             paired ? h('button', { style: styles.link, onClick: () => setOpen(false) }, '暂离') : null,
           ),
         ),
