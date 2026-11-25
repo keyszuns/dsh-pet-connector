@@ -672,6 +672,18 @@ class Connector {
         return this.sendJson(res, result.status, result.body)
       }
 
+      if (method === 'POST' && (path === '/cultivation/breakthrough' || path === '/cultivation/skill')) {
+        const body = await this.readJson(req)
+        const result = await this.platformJson(`/v1/world${path}`, {
+          method: 'POST',
+          headers: { authorization: `Bearer ${this.token}` },
+          body: body ?? {},
+        }).catch(() => null)
+        if (!result) return this.sendJson(res, 502, { ok: false, reason: 'platform-unreachable' })
+        if (result.body?.ok) await this.refreshProfile()
+        return this.sendJson(res, result.status, result.body)
+      }
+
       if (method === 'GET' && path === '/coop/status') {
         const result = await this.platformJson('/v1/world/coop/status', {
           headers: { authorization: `Bearer ${this.token}` },
